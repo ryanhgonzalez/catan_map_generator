@@ -3,7 +3,8 @@
 
 <title>Settlers Of Catan</title>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="shortcut icon" href="webpageimages/favicon.ico" type="image/x-icon">
   <link rel="icon" href="webpageimages/favicon.ico" type="image/x-icon">
   <link rel="apple-touch-icon" href="/webpageimages/apple-icon.png">
@@ -48,7 +49,10 @@
 <footer>
 	<div class="row">
 		<nav class="navbar fixed-bottom navbar-dark bg-dark">
-		  <button id="gen-map-button" type="button" disabled="true" class="btn btn-primary">Loading...</button>
+			<form class="form-inline">
+			  <button id="gen-map-back-button" type="button" class="btn btn-secondary btn-sm"><i class="material-icons">navigate_before</i></button>
+			  <button id="gen-map-button" type="button" disabled="true" class="btn btn-primary divider">Loading...</button>
+			</form>
 		  <button id="share-catan-board" type="button" class="btn btn-info btn-sm"><i class="material-icons">file_upload</i></button>
 		</nav>
 	</div>
