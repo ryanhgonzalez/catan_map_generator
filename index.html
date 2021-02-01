@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="css/stylesheet.css" type="text/css"> 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
+  <link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
@@ -22,7 +24,10 @@
 
 <head>
   <div class="jumbotron text-center">
-  <h1>Catan Board Generator</h1>
+  <div>
+      <h1 class='inline-block-children'>Catan Board Generator</h1>
+      <h1 class='inline-block-children information-button'><i class="fa fa-info-circle" aria-hidden="true" data-toggle="modal" data-target="#information-modal"></i></h1>
+  </div>
   <div class="btn-group-sm btn-group-toggle" data-toggle="buttons">
   <label class="btn btn-secondary active">
     <input type="radio" name="game-type" value="normal" checked> Normal (1-4 Players)
@@ -37,11 +42,40 @@
 <body>
 <div class="container">
   <div class="row">
-    <div class="col-sm-12">
+    <div class="col-md-12">
 		<div id="map-container">
 		</div>
     </div>
   </div>
+</div>
+
+<!--<div id="map-container">
+</div>-->
+
+<div class="modal fade" id="information-modal" tabindex="-1" role="dialog" aria-labelledby="aboutApp">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="aboutApp">About Me</h4>
+            </div>
+            <div class="modal-body">
+                This board generator is dedicated to my friends: Michael, JD, Tai, and Anthony.
+                To many more nights of playing together! <i class="em em---1" aria-role="presentation" aria-label="THUMBS UP SIGN"></i>
+                <br>
+                <br>
+                <i><b>TODO:</b> Implementation of back button and board scan verify functionality.</i>
+            </div>
+            <div class="modal-footer">
+                <a class="twitter-share-button"
+                   target="_blank"
+                   href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fcatanboard.bitbucket.io&text=Check%20out%20this%20Catan%20board%20generator%20I%27m%20using%21%20&hashtags=SettlersOfCatan"
+                   data-size="large">
+                    <div class="fa fa-twitter btn btn-info"></div>
+                </a>
+                <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 </body>
 
@@ -49,10 +83,10 @@
 	<div class="row">
 		<nav class="navbar fixed-bottom navbar-dark bg-dark">
 			<form class="form-inline">
-			  <button id="gen-map-back-button" type="button" class="btn btn-secondary btn-sm"><i class="material-icons">navigate_before</i></button>
+			  <button id="gen-map-back-button" type="button" class="btn btn-secondary d-flex"><i class="material-icons">navigate_before</i></button>
 			  <button id="gen-map-button" type="button" disabled="true" class="btn btn-primary divider">Loading...</button>
 			</form>
-		  <button id="share-catan-board" type="button" class="btn btn-info btn-sm"><i class="material-icons">file_upload</i></button>
+		  <button id="share-catan-board" type="button" class="btn btn-info d-flex"><i class="material-icons">photo_camera</i></button>
 		</nav>
 	</div>
 </footer>

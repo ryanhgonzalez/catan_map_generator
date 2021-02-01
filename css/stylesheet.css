@@ -40,3 +40,11 @@ button {
 .divider{
   margin: 5px;
 }
+
+.inline-block-children {
+  display: inline-block;
+}
+
+.information-button {
+  color: #0062CC;
+}
