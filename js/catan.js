@@ -585,16 +585,10 @@ function addCanvas() {
 
 function sizeCanvas() {
 	var mapContainer = $("div#map-container")[0];
-	$(mapCanvas).attr("width", 800);
-	$(mapCanvas).attr("height", 800);
-	canvasCenterY = mapCanvas.height/2;
-	canvasCenterX = mapCanvas.width/2;
-
-	/*var mapContainer = $("div#map-container")[0];
     $(mapCanvas).attr("width", $(mapContainer).width());
     $(mapCanvas).attr("height", $(mapContainer).height());
     canvasCenterY = mapCanvas.height/2;
-    canvasCenterX = mapCanvas.width/2;*/
+    canvasCenterX = mapCanvas.width/2;
 }
 
 // http://stackoverflow.com/questions/2142535/how-to-clear-the-canvas-for-redrawing

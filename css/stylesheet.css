@@ -1,50 +1,39 @@
-#content-wrapper {
-   width:100%;
-   height:100%;
-   margin:0 auto;
-   position:relative;
-}
-#content-left {
-    text-align:center;
-    float:left;
-    width:300px;
-}
-#content-right {
-    margin-left:300px;
-    height:100%;
-}
 #map-container {
 	width:100%;
-	height:100%;
+    height:75%;
+	/*border: 1px solid red;*/
+
 }
+
 button#gen-map-button {
 	width:100px;
 }
-#gen-options {
-	padding: 20px 0px;
-}
+
 canvas#map-canvas {
 	width:100%;
 	height:100%;
-  padding-bottom: 15%;
 }
+
 body, html, canvas {
 	margin: 0;
 	padding: 0;
 	width: 100%;
 	height: 100%;
+	overflow: hidden;
 }
+
 button {
-  touch-action: manipulation;
+    touch-action: manipulation;
 }
+
 .divider{
-  margin: 5px;
+    margin: 5px;
 }
 
 .inline-block-children {
-  display: inline-block;
+    display: inline-block;
 }
 
 .information-button {
-  color: #0062CC;
+    color: #0062CC;
 }
