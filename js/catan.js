@@ -584,7 +584,7 @@ function addCanvas() {
 }
 
 function sizeCanvas() {
-	var mapContainer = $("div#map-container")[0];
+    var mapContainer = $("div#map-container")[0];
     $(mapCanvas).attr("width", $(mapContainer).width());
     $(mapCanvas).attr("height", $(mapContainer).height());
     canvasCenterY = mapCanvas.height/2;

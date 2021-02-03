@@ -1,10 +1,3 @@
-#map-container {
-	width:100%;
-    height:75%;
-	/*border: 1px solid red;*/
-
-}
-
 button#gen-map-button {
 	width:100px;
 }
@@ -19,11 +12,6 @@ body, html, canvas {
 	padding: 0;
 	width: 100%;
 	height: 100%;
-	overflow: hidden;
-}
-
-button {
-    touch-action: manipulation;
 }
 
 .divider{
@@ -36,4 +24,53 @@ button {
 
 .information-button {
     color: #0062CC;
+}
+
+/*
+https://www.w3schools.com/css/css_rwd_mediaqueries.asp
+*/
+
+/* Extra small devices (phones, 600px and down) */
+@media only screen and (max-width: 600px) {
+  #map-container {
+  	/*border: 2px solid purple;*/
+  	width:100%;
+    height:60%;
+  }
+}
+
+/* Small devices (portrait tablets and large phones, 600px and up) */
+@media only screen and (min-width: 600px) {
+  #map-container {
+    /*border: 2px solid green;*/
+    width:100%;
+    height:60%;
+  }
+}
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+  #map-container {
+    /*border: 2px solid blue;*/
+    width:100%;
+    height:65%;
+  }
+}
+
+/* Large devices (laptops/desktops, 992px and up) */
+@media only screen and (min-width: 992px) {
+  #map-container {
+    /*border: 2px solid orange;*/
+    width:100%;
+    height:70%;
+  }
+}
+
+/* Extra large devices (large laptops and desktops, 1200px and up) */
+@media only screen and (min-width: 1200px) {
+  #map-container {
+    /*border: 2px solid red;*/
+    width:100%;
+    height:75%;
+  }
 }
