@@ -375,9 +375,9 @@ CatanMap.prototype.resize = function() {
 /* Size = Height / ( (coordSpacing + 2) * Math.sin(Math.PI/3) )
  * Size = Width / ( (coordSpacing * (1 + Math.cos(Math.PI/3)) / 2) + 2 )
 */
-	var wSize = (mapCanvas.width-10) / 
+	var wSize = (mapCanvas.width-10) /
 		( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 );
-	var hSize = (mapCanvas.height-10) / 
+	var hSize = (mapCanvas.height-10) /
 		( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) );
 	size = Math.floor(Math.min(wSize, hSize));
 	dx = size * (1 + Math.cos(Math.PI/3)) / 2;
@@ -576,17 +576,20 @@ function addCanvas() {
 	mapCanvas = document.createElement("canvas");
 	drawingContext = mapCanvas.getContext('2d');
 	mapCanvas.id = "map-canvas";
-	
 	sizeCanvas();
-	
 	document.getElementById("map-container").appendChild(mapCanvas);
-	
 }
 
 function sizeCanvas() {
-    var mapContainer = $("div#map-container")[0];
+    /*var mapContainer = $("div#map-container")[0];
     $(mapCanvas).attr("width", $(mapContainer).width());
     $(mapCanvas).attr("height", $(mapContainer).height());
+    canvasCenterY = mapCanvas.height/2;
+    canvasCenterX = mapCanvas.width/2;*/
+
+    var mapContainer = $("div#map-container")[0];
+    $(mapCanvas).attr("width", 1000);
+    $(mapCanvas).attr("height", 1000);
     canvasCenterY = mapCanvas.height/2;
     canvasCenterX = mapCanvas.width/2;
 }

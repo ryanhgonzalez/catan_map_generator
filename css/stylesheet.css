@@ -12,6 +12,7 @@ body, html, canvas {
 	padding: 0;
 	width: 100%;
 	height: 100%;
+	/*overflow: hidden;*/
 }
 
 .divider{
@@ -26,51 +27,88 @@ body, html, canvas {
     color: #0062CC;
 }
 
-/*
-https://www.w3schools.com/css/css_rwd_mediaqueries.asp
-*/
-
 /* Extra small devices (phones, 600px and down) */
 @media only screen and (max-width: 600px) {
   #map-container {
-  	/*border: 2px solid purple;*/
-  	width:100%;
-    height:60%;
+    border: 2px solid purple;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+
+    width:100%;
+    height:100%;
+    margin:0 auto;
+  }
+
+  #map-container:hover {
+    box-shadow: 0 16px 32px 0 rgba(0,0,0,0.2);
   }
 }
 
 /* Small devices (portrait tablets and large phones, 600px and up) */
 @media only screen and (min-width: 600px) {
   #map-container {
-    /*border: 2px solid green;*/
+    border: 2px solid green;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+
     width:100%;
-    height:60%;
+    height:100%;
+    margin:0 auto;
+  }
+
+  #map-container:hover {
+    box-shadow: 0 16px 32px 0 rgba(0,0,0,0.2);
   }
 }
 
 /* Medium devices (landscape tablets, 768px and up) */
 @media only screen and (min-width: 768px) {
   #map-container {
-    /*border: 2px solid blue;*/
+    border: 2px solid blue;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+
     width:100%;
-    height:65%;
+    height:100%;
+    margin:0 auto;
+  }
+
+  #map-container:hover {
+    box-shadow: 0 16px 32px 0 rgba(0,0,0,0.2);
   }
 }
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 992px) {
   #map-container {
-    /*border: 2px solid orange;*/
+    border: 2px solid orange;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+
     width:100%;
-    height:70%;
+    height:100%;
+    margin:0 auto;
+  }
+
+  #map-container:hover {
+    box-shadow: 0 16px 32px 0 rgba(0,0,0,0.2);
   }
 }
 
 /* Extra large devices (large laptops and desktops, 1200px and up) */
 @media only screen and (min-width: 1200px) {
   #map-container {
-    /*border: 2px solid red;*/
-    width:100%;
-    height:75%;
+    border: 2px solid red;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+
+    width:90%;
+    height:95%;
+    margin:0 auto;
+  }
+
+  #map-container:hover {
+    box-shadow: 0 16px 32px 0 rgba(0,0,0,0.2);
   }
 }
+
