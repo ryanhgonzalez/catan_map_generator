@@ -32,6 +32,25 @@ var resourceTypeToImageCanvas = {
 	"desert": null
 };
 
+const RESOURCE_TO_CODE = {
+    "desert": 0,
+    "wood": 1,
+    "clay": 2,
+    "wool": 3,
+    "grain": 4,
+    "ore": 5
+};
+
+const CODE_TO_RESOURCE = {
+    0: "desert",
+    1: "wood",
+    2: "clay",
+    3: "wool",
+    4: "grain",
+    5: "ore"
+};
+
+
 //var allImagesLoaded = false;
 
 // ----- Grid layout globals -----
@@ -121,6 +140,149 @@ expandedMap.coordinatesArray = [
 var boardHistory = [];
 var currentBoardIndex = -1; // No boards generated yet
 
+// ----- URL encoding helpers -----
+
+/**
+ * Encode the current board into a compact Base64 string and return it.
+ * Format before encoding: "gridX,gridY:resource:number;..."
+ */
+function encodeBoard() {
+    if (!catanMap.hexTiles) return "";
+
+    const payload = catanMap.hexTiles.map(tile => {
+        const n = (typeof tile.number === 'number') ? tile.number : "";
+        return `${tile.gridX},${tile.gridY}:${tile.resourceType}:${n}`;
+    }).join(";");
+
+    try {
+        return btoa(payload);
+    } catch (e) {
+        console.error('Failed to encode board to base64', e);
+        return "";
+    }
+}
+
+function encodeBoardShort() {
+    if (!catanMap.hexTiles) return "";
+
+    const tiles = catanMap.hexTiles.map(tile => {
+        const res = RESOURCE_TO_CODE[tile.resourceType] ?? 0;
+        const num = tile.number ?? 0;
+        return `${tile.gridX},${tile.gridY},${res},${num}`;
+    });
+
+    const compact = tiles.join(".");
+    return btoa(compact);
+}
+
+
+/**
+ * Decode a Base64 board string into an array of tile objects.
+ * Returns null on failure.
+ */
+function decodeBoard(b64) {
+    if (!b64) return null;
+    let decoded;
+    try {
+        decoded = atob(b64);
+    } catch (e) {
+        console.error('Invalid base64 for board:', e);
+        return null;
+    }
+
+    if (!decoded) return null;
+
+    const entries = decoded.split(";");
+    const tiles = [];
+
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        if (!entry) continue;
+        const parts = entry.split(":");
+        if (parts.length < 2) {
+            console.warn('Malformed board entry:', entry);
+            continue;
+        }
+        const coords = parts[0].split(",");
+        const x = parseInt(coords[0]);
+        const y = parseInt(coords[1]);
+        const resource = parts[1];
+        const numPart = parts[2] || "";
+        const number = (numPart === "") ? null : parseInt(numPart);
+
+        tiles.push({ gridX: x, gridY: y, resourceType: resource, number: number });
+    }
+
+    return tiles;
+}
+
+function decodeBoardShort(b64) {
+    let decoded;
+    try {
+        decoded = atob(b64);
+    } catch {
+        console.error("Invalid compact board encoding.");
+        return null;
+    }
+
+    const tiles = decoded.split(".").map(part => {
+        const [gx, gy, rc, num] = part.split(",").map(v => parseInt(v));
+        return {
+            gridX: gx,
+            gridY: gy,
+            resourceType: CODE_TO_RESOURCE[rc] ?? "desert",
+            number: num === 0 ? null : num
+        };
+    });
+
+    return tiles;
+}
+
+
+/**
+ * Load a decoded state (array of tile objects) into the map and render it.
+ */
+function loadBoardFromDecodedState(stateTiles) {
+    if (!Array.isArray(stateTiles)) return;
+
+	  // Determine map type based on tile count
+    if (stateTiles.length === normalMap.coordinatesArray.length) {
+        catanMap.defineMap(normalMap);
+    } else if (stateTiles.length === expandedMap.coordinatesArray.length) {
+        catanMap.defineMap(expandedMap);
+    } else {
+        console.warn("Unknown map size; cannot set map definition correctly.");
+    }
+
+    catanMap.hexTiles = stateTiles.map(t => {
+        const tile = new HexTile();
+        tile.setCoordinate(t.gridX, t.gridY);
+        tile.setResourceType(t.resourceType);
+        if (t.number !== null && t.number !== undefined) tile.setNumber(t.number);
+        return tile;
+    });
+
+    catanMap.coordToTile = {};
+    catanMap.hexTiles.forEach(tile => {
+        catanMap.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
+    });
+
+    // Render
+    sizeCanvas();
+    catanMap.resize();
+    catanMap.draw();
+
+    // Put into history so back/forward still work
+    boardHistory = [catanMap.hexTiles.map(tile => ({
+        resourceType: tile.resourceType,
+        number: tile.number,
+        gridX: tile.gridX,
+        gridY: tile.gridY
+    }))];
+    currentBoardIndex = 0;
+    enableButtons();
+}
+
 // ----- FUNCTIONS -----
 
 window.onresize = function(event) {
@@ -130,7 +292,11 @@ window.onresize = function(event) {
 }
 
 function init() {
+    // Ensure the canvas exists early so we can render as soon as images and board data are ready
+    addCanvas();
+
     loadImages(function () {
+        // Wire up buttons (we do this after images are loaded to keep behavior consistent)
         const genButton = $('button#gen-map-button')[0];
         $(genButton).click(generate);
         genButton.disabled = false;
@@ -142,12 +308,60 @@ function init() {
         const goForwardButton = $('button#gen-map-forward-button')[0];
         $(goForwardButton).click(goForward);
 
+        const shareButton = document.getElementById("share-catan-board");
+		shareButton.addEventListener("click", async () => {
+			const encoded = encodeBoardShort();
+			if (!encoded) {
+				alert("Generate a board first before sharing.");
+				return;
+			}
+
+			// Build shareable URL
+			const url = new URL(window.location);
+			url.searchParams.set("board", encoded);
+			const shareUrl = url.toString();
+
+			// If Web Share API is supported (Mobile Safari/Chrome)
+			if (navigator.share) {
+				try {
+					await navigator.share({
+						title: "Catan Board",
+						text: "Check out this Catan board!",
+						url: shareUrl
+					});
+					return;
+				} catch (err) {
+					// fall through to clipboard
+					console.warn("Share canceled or failed; falling back.", err);
+				}
+			}
+
+			// Fallback for desktop browsers
+			try {
+				await navigator.clipboard.writeText(shareUrl);
+				alert("Share URL copied to clipboard!");
+			} catch (err) {
+				prompt("Copy this share link:", shareUrl);
+			}
+		});
+
+
         enableButtons();
+
+        // If the URL has a board parameter, auto-load it (Option A)
+        const url = new URL(window.location);
+        const encodedBoard = url.searchParams.get('board');
+        if (encodedBoard) {
+            const boardState = decodeBoardShort(encodedBoard);
+            if (boardState) {
+                loadBoardFromDecodedState(boardState);
+                return; // We've loaded the shared board — skip automatic generation
+            }
+        }
+
+        // otherwise keep normal UI ready for the user
     });
-
-    addCanvas();
 }
-
 
 function preloadImages(arr, callback){
 	//http://www.javascriptkit.com/javatutors/preloadimagesplus.shtml
@@ -238,6 +452,14 @@ function generate() {
     catanMap.resize();
     catanMap.draw();
 
+    // Update URL so this exact board can be shared
+    const encoded = encodeBoardShort();
+    if (encoded) {
+        const url = new URL(window.location);
+        url.searchParams.set('board', encoded);
+        window.history.replaceState({}, '', url);
+    }
+
     enableButtons();
 }
 
@@ -283,6 +505,14 @@ function loadBoardFromHistory(index) {
     });
 
     catanMap.draw();
+
+    // Also update URL to reflect the current history board
+    const encoded = encodeBoardShort();
+    if (encoded) {
+        const url = new URL(window.location);
+        url.searchParams.set('board', encoded);
+        window.history.replaceState({}, '', url);
+    }
 }
 
 function enableButtons() {
@@ -437,7 +667,7 @@ CatanMap.prototype.generate = function() {
 			
 			this.hexTiles.push(newHexTile);
 			this.coordToTile[newCoords.toString()] = newHexTile;
-		} // end for loop
+		}
 		
 	} else {
 		console.log("No map definition.");
@@ -668,6 +898,7 @@ function addCanvas() {
 
 function sizeCanvas() {
     var mapContainer = $("div#map-container")[0];
+    if (!mapCanvas) return;
     $(mapCanvas).attr("width", $(mapContainer).width());
     $(mapCanvas).attr("height", $(mapContainer).height());
     canvasCenterY = mapCanvas.height/2;

@@ -1,87 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<title>Settlers Of Catan</title>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="shortcut icon" href="webpageimages/favicon.ico" type="image/x-icon">
-<link rel="icon" href="webpageimages/favicon.ico" type="image/x-icon">
-<link rel="apple-touch-icon" href="/webpageimages/apple-icon.png">
-<link rel="stylesheet" href="css/stylesheet.css" type="text/css">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css">
-<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
-<script type="text/javascript" language="javascript">
-    $(document).ready(function() {
-        init();
-    });
-</script>
-<script src="js/catan.js" type="text/javascript"></script>
-
 <head>
-  <div class="jumbotron text-center">
-      <div>
-          <h1 class='inline-block-children'>Catan Board Generator</h1>
-          <h1 class='inline-block-children information-button'><i class="fa fa-info-circle" aria-hidden="true" data-toggle="modal" data-target="#information-modal"></i></h1>
-      </div>
-      <div class="btn-group-sm btn-group-toggle" data-toggle="buttons">
-      <label class="btn btn-secondary active">
-        <input type="radio" name="game-type" value="normal" checked> Normal (1-4 Players)
-      </label>
-      <label class="btn btn-secondary">
-        <input type="radio" name="game-type" value="expanded"> Expansion (5-6 Players)
-      </label>
-      </div>
-  </div>
+  <meta charset="UTF-8" />
+  <title>Catan Board Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/stylesheet.css" />
+  <script src="js/catan.js"></script>
+  <script src="js/ui.js"></script>
+
 </head>
-
 <body>
-    <div id="map-container">
+  <header class="app-header">
+    <div class="app-header-inner">
+      <h1 class="app-title">Catan Board Generator</h1>
+      <p class="app-subtitle">Generate balanced classic and expanded Catan maps.</p>
     </div>
+  </header>
 
-    <div class="modal fade" id="information-modal" tabindex="-1" role="dialog" aria-labelledby="aboutApp">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="aboutApp">About Me</h4>
-                </div>
-                <div class="modal-body">
-                    This board generator is dedicated to my friends: Michael, JD, Tai, and Anthony.
-                    To many more nights of playing together! <i class="em em---1" aria-role="presentation" aria-label="THUMBS UP SIGN"></i>
-                    <br>
-                    <br>
-                    <i><b>TODO:</b> Implementation of back button and board scan verify functionality.</i>
-                </div>
-                <div class="modal-footer">
-                    <a class="twitter-share-button"
-                       target="_blank"
-                       href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fcatanboard.bitbucket.io&text=Check%20out%20this%20Catan%20board%20generator%20I%27m%20using%21%20&hashtags=SettlersOfCatan"
-                       data-size="large">
-                        <div class="fa fa-twitter btn btn-info"></div>
-                    </a>
-                    <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal">Close</button>
-                </div>
-            </div>
+  <main class="app-main">
+    <section class="control-panel" aria-label="Board controls">
+      <div class="card">
+        <h2 class="card-title">Game type</h2>
+        <div class="field-group">
+          <label class="radio-row">
+            <input
+              type="radio"
+              name="game-type"
+              value="normal"
+              checked
+            />
+            <span>Standard (3–4 players)</span>
+          </label>
+          <label class="radio-row">
+            <input
+              type="radio"
+              name="game-type"
+              value="expanded"
+            />
+            <span>Expanded (5–6 players)</span>
+          </label>
         </div>
-    </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Board actions</h2>
+        <div class="button-row">
+          <button id="gen-map-button" class="btn btn-primary" disabled>
+            Loading…
+          </button>
+        </div>
+        <div class="button-row history-row">
+          <button
+            id="gen-map-back-button"
+            class="btn btn-secondary"
+            type="button"
+            disabled
+          >
+            ◀ Previous
+          </button>
+          <button
+            id="gen-map-forward-button"
+            class="btn btn-secondary"
+            type="button"
+            disabled
+          >
+            Next ▶
+          </button>
+        </div>
+        <div class="button-row">
+          <button
+            id="share-catan-board"
+            class="btn btn-ghost"
+            type="button"
+          >
+            Share current board
+          </button>
+        </div>
+        <p class="helper-text">
+          Use Generate to roll a new balanced layout, then navigate history
+          with Previous and Next. The share button copies a URL that encodes
+          the current board state. 
+        </p>
+      </div>
+
+      <div class="card card-meta">
+        <h2 class="card-title">About</h2>
+        <p class="small-text">
+          Boards respect Catan tile and number distributions for both standard
+          and expanded maps, and try to avoid clustering highly productive
+          numbers like 6 and 8. 
+        </p>
+      </div>
+    </section>
+
+    <section class="board-panel" aria-label="Catan board preview">
+      <div id="map-container" class="map-container">
+        <!-- Canvas is injected by catan.js via addCanvas() -->
+        <div class="map-loading-state" id="map-loading-state">
+          <div class="spinner"></div>
+          <p>Preparing your board…</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p class="small-text">
+      Tip: Rotate your device to landscape for a larger board view.
+    </p>
+  </footer>
+
 </body>
-
-<footer>
-	<div class="row">
-		<nav class="navbar fixed-bottom navbar-dark bg-dark">
-			<form class="form-inline">
-			  <button id="gen-map-back-button" type="button" class="btn btn-secondary d-flex"><i class="material-icons">navigate_before</i></button>
-              <button id="gen-map-forward-button" type="button" class="btn btn-secondary d-flex"><i class="material-icons">navigate_next</i></button>
-			  <button id="gen-map-button" type="button" disabled="true" class="btn btn-primary divider">Loading...</button>
-			</form>
-		  <button id="share-catan-board" type="button" class="btn btn-info d-flex"><i class="material-icons">photo_camera</i></button>
-		</nav>
-	</div>
-</footer>
-
-</html>
 </html>

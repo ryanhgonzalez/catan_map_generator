@@ -1,76 +1,313 @@
-button#gen-map-button {
-	width:100px;
+/* --- Theme tokens --- */
+
+:root {
+  --bg-body: #0f172a;
+  --bg-elevated: #0b1120;
+  --bg-elevated-soft: #020617;
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --accent-strong: #fb923c;
+  --border-subtle: rgba(148, 163, 184, 0.35);
+  --text-primary: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-strong: #f9fafb;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.6);
+  --transition-fast: 150ms ease-out;
 }
 
+/* --- Global reset and base --- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: var(--text-primary);
+  background: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000 100%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Layout --- */
+
+.app-header {
+  padding: 0.9rem 1.25rem 0.4rem;
+}
+
+.app-header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.app-subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  gap: 1rem;
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto 0.75rem;
+  padding: 0 1.25rem 0.25rem;
+}
+
+/* Controls column */
+
+.control-panel {
+  width: 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Board column */
+
+.board-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+/* Canvas must fill container */
 canvas#map-canvas {
-	width:100%;
-	height:100%;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-body, html, canvas {
-	margin: 0;
-	padding: 0;
-	width: 100%;
-	height: 100%;
+/* Loading state overlay */
+
+.map-loading-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  background: radial-gradient(
+    circle at top,
+    rgba(15, 23, 42, 0.95) 0,
+    rgba(2, 6, 23, 0.98) 60%,
+    rgba(0, 0, 0, 0.98) 100%
+  );
+  z-index: 1;
 }
 
-.divider{
-    margin: 5px;
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 3px solid rgba(148, 163, 184, 0.3);
+  border-top-color: var(--accent);
+  animation: spin 800ms linear infinite;
 }
 
-.inline-block-children {
-    display: inline-block;
-}
-
-.information-button {
-    color: #0062CC;
-}
-
-/*
-https://www.w3schools.com/css/css_rwd_mediaqueries.asp
-*/
-
-/* Extra small devices (phones, 600px and down) */
-@media only screen and (max-width: 600px) {
-  #map-container {
-  	/*border: 2px solid purple;*/
-  	width:100%;
-    height:60%;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-/* Small devices (portrait tablets and large phones, 600px and up) */
-@media only screen and (min-width: 600px) {
-  #map-container {
-    /*border: 2px solid green;*/
-    width:100%;
-    height:60%;
+/* --- Cards and typography --- */
+
+.card {
+  background: linear-gradient(
+      135deg,
+      rgba(249, 115, 22, 0.12),
+      transparent 32%
+    ),
+    var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: 0.85rem 0.9rem 0.8rem;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
+}
+
+.card-meta {
+  background: var(--bg-elevated-soft);
+}
+
+.card-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.radio-row input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+.helper-text {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.small-text {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* --- Buttons --- */
+
+.button-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.history-row {
+  justify-content: space-between;
+}
+
+.btn {
+  appearance: none;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: radial-gradient(circle at top left, var(--accent-strong), #f97316);
+  border-color: rgba(248, 250, 252, 0.08);
+  color: #0b1120;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.45);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 35px rgba(249, 115, 22, 0.55);
+}
+
+.btn-secondary {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.6);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 1);
+  border-color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: rgba(148, 163, 184, 0.4);
+  color: var(--accent-strong);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent-strong);
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* --- Footer --- */
+
+.app-footer {
+  padding: 0 1.25rem 0.75rem;
+  text-align: center;
+}
+
+/* --- Responsive behavior --- */
+
+/* Phones and small screens */
+@media (max-width: 768px) {
+  .app-main {
+    flex-direction: column;
+    padding-bottom: 0.5rem;
+  }
+
+  .control-panel {
+    width: 100%;
+    order: 2;
+  }
+
+  .board-panel {
+    order: 1;
+    height: 60vh;
   }
 }
 
-/* Medium devices (landscape tablets, 768px and up) */
-@media only screen and (min-width: 768px) {
-  #map-container {
-    /*border: 2px solid blue;*/
-    width:100%;
-    height:65%;
+/* Tablets and up */
+@media (min-width: 769px) {
+  .board-panel {
+    height: 70vh;
   }
 }
 
-/* Large devices (laptops/desktops, 992px and up) */
-@media only screen and (min-width: 992px) {
-  #map-container {
-    /*border: 2px solid orange;*/
-    width:100%;
-    height:70%;
-  }
-}
-
-/* Extra large devices (large laptops and desktops, 1200px and up) */
-@media only screen and (min-width: 1200px) {
-  #map-container {
-    /*border: 2px solid red;*/
-    width:100%;
-    height:75%;
+/* Large desktops */
+@media (min-width: 1280px) {
+  .board-panel {
+    height: 75vh;
   }
 }
