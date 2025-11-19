@@ -116,6 +116,11 @@ expandedMap.coordinatesArray = [
 	[6,2],[6,0],[6,-2]
 ];
 
+// ----- Catan Board History Traversal -----
+
+var boardHistory = [];
+var currentBoardIndex = -1; // No boards generated yet
+
 // ----- FUNCTIONS -----
 
 window.onresize = function(event) {
@@ -125,17 +130,24 @@ window.onresize = function(event) {
 }
 
 function init() {
+    loadImages(function () {
+        const genButton = $('button#gen-map-button')[0];
+        $(genButton).click(generate);
+        genButton.disabled = false;
+        genButton.innerHTML = "Generate";
 
-	loadImages(function() {
-		var button = $('button#gen-map-button')[0];
-		$(button).click(generate);
-		button.disabled = false;
-		button.innerHTML = "Generate";
-	});
-	
-	addCanvas();
-	
+        const goBackButton = $('button#gen-map-back-button')[0];
+        $(goBackButton).click(goBack);
+
+        const goForwardButton = $('button#gen-map-forward-button')[0];
+        $(goForwardButton).click(goForward);
+
+        enableButtons();
+    });
+
+    addCanvas();
 }
+
 
 function preloadImages(arr, callback){
 	//http://www.javascriptkit.com/javatutors/preloadimagesplus.shtml
@@ -193,21 +205,92 @@ function loadImages(callback) {
 }
 
 function generate() {
+    const currentBoardState = catanMap.hexTiles?.map(tile => ({
+        resourceType: tile.resourceType,
+        number: tile.number,
+        gridX: tile.gridX,
+        gridY: tile.gridY
+    })) || null;
 
-	var mapDef;
-	switch($("input[name=game-type]:checked").val()) {
-		case "expanded":
-			mapDef = expandedMap;
-			break;
-		default:
-			mapDef = normalMap;
-	} 
-	
-	catanMap.defineMap(mapDef);
-	catanMap.generate();
-	catanMap.resize();
-	catanMap.draw();
-	
+    // If we are not at the end of the history, truncate it
+    if (currentBoardIndex < boardHistory.length - 1) {
+        boardHistory = boardHistory.slice(0, currentBoardIndex + 1);
+    }
+
+    // Add the current board to the history
+    if (currentBoardState) {
+        boardHistory.push(currentBoardState);
+    }
+    currentBoardIndex = boardHistory.length - 1;
+
+    // Generate a new board
+    var mapDef;
+    switch ($("input[name=game-type]:checked").val()) {
+        case "expanded":
+            mapDef = expandedMap;
+            break;
+        default:
+            mapDef = normalMap;
+    }
+
+    catanMap.defineMap(mapDef);
+    catanMap.generate();
+    catanMap.resize();
+    catanMap.draw();
+
+    enableButtons();
+}
+
+function goBack() {
+    if (currentBoardIndex <= 0) {
+        console.log("No previous board to go back to.");
+        return;
+    }
+
+    currentBoardIndex--;
+    loadBoardFromHistory(currentBoardIndex);
+    enableButtons();
+}
+
+function goForward() {
+    if (currentBoardIndex >= boardHistory.length - 1) {
+        console.log("No forward board to navigate to.");
+        return;
+    }
+
+    currentBoardIndex++;
+    loadBoardFromHistory(currentBoardIndex);
+    enableButtons();
+}
+
+function loadBoardFromHistory(index) {
+    const boardState = boardHistory[index];
+    if (!boardState) return;
+
+    catanMap.hexTiles = boardState.map(tileState => {
+        const tile = new HexTile();
+        tile.setCoordinate(tileState.gridX, tileState.gridY);
+        tile.setResourceType(tileState.resourceType);
+        if (tileState.number) {
+            tile.setNumber(tileState.number);
+        }
+        return tile;
+    });
+
+    catanMap.coordToTile = {};
+    catanMap.hexTiles.forEach(tile => {
+        catanMap.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
+    });
+
+    catanMap.draw();
+}
+
+function enableButtons() {
+    const goBackButton = $('button#gen-map-back-button')[0];
+    const goForwardButton = $('button#gen-map-forward-button')[0];
+
+    goBackButton.disabled = currentBoardIndex <= 0;
+    goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
 }
 
 function MapDefinition() {
