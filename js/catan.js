@@ -689,12 +689,13 @@ CatanMap.prototype.resize = function() {
  * Size = Width / ( (coordSpacing * (1 + Math.cos(Math.PI/3)) / 2) + 2 )
 */
 	var wSize = (mapCanvas.width-10) / 
-		( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 );
-	var hSize = (mapCanvas.height-10) / 
-		( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) );
-	size = Math.floor(Math.min(wSize, hSize));
-	dx = size * (1 + Math.cos(Math.PI/3)) / 2;
-	dy = size * Math.sin(Math.PI/3);
+        ( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 );
+    var hSize = (mapCanvas.height-10) / 
+        ( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) );
+    size = Math.floor(Math.min(wSize, hSize));
+    dx = size * (1 + Math.cos(Math.PI/3)) / 2;
+    dy = size * Math.sin(Math.PI/3);
+    lineWidth = Math.max(1, Math.min(3, size / 30));
 }
 CatanMap.prototype.getAdjacentTiles = function(tile) {
 	
@@ -772,9 +773,10 @@ HexTile.prototype.draw = function() {
 	}
 }
 HexTile.prototype.drawBase = function() {
-	
+	var responsiveLineWidth = Math.max(1, Math.min(3, size / 30));
+
 	if (mapStyle == "retro") {
-		drawingContext.lineWidth = 10;
+        drawingContext.lineWidth = Math.max(3, Math.min(10, size / 15));
 		drawingContext.fillStyle = "rgba(255,255,255,0)";
 		drawingContext.strokeStyle = "#FAEB96";
 	} else {
@@ -823,10 +825,11 @@ HexTile.prototype.drawBase = function() {
 	
 }
 HexTile.prototype.drawNumber = function() {
+	var responsiveLineWidth = Math.max(1, Math.min(3, size / 30));
 	
 	drawingContext.fillStyle = "#FFFFFF";
 	drawingContext.strokeStyle = "#000000";
-	drawingContext.lineWidth = 3;
+	drawingContext.lineWidth = responsiveLineWidth;
 	
 	drawingContext.beginPath();
 	drawingContext.arc(this.xCenter, this.yCenter, 0.375 * size,
