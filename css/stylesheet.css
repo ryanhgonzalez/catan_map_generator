@@ -1,20 +1,62 @@
 /* --- Theme tokens --- */
 
+/* Dark is the default theme. ui.js sets data-theme on <html> from the
+   saved choice or the OS preference before the page renders. */
 :root {
-  --bg-body: #0f172a;
+  color-scheme: dark;
+  --bg-page: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000 100%);
+  --bg-board: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
   --bg-elevated: #0b1120;
   --bg-elevated-soft: #020617;
+  --card-tint: rgba(249, 115, 22, 0.12);
+  --card-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
   --accent: #f97316;
   --accent-soft: rgba(249, 115, 22, 0.12);
   --accent-strong: #fb923c;
   --border-subtle: rgba(148, 163, 184, 0.35);
+  --spinner-track: rgba(148, 163, 184, 0.3);
   --text-primary: #e5e7eb;
   --text-muted: #9ca3af;
   --text-strong: #f9fafb;
+  --btn-primary-border: rgba(248, 250, 252, 0.08);
+  --btn-primary-shadow: 0 10px 25px rgba(249, 115, 22, 0.45);
+  --btn-primary-shadow-hover: 0 16px 35px rgba(249, 115, 22, 0.55);
+  --btn-secondary-bg: rgba(15, 23, 42, 0.9);
+  --btn-secondary-bg-hover: rgba(15, 23, 42, 1);
+  --btn-secondary-border: rgba(148, 163, 184, 0.6);
+  --btn-ghost-border: rgba(148, 163, 184, 0.4);
+  --btn-ghost-text: #fb923c;
   --radius-lg: 18px;
   --radius-md: 12px;
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.6);
   --transition-fast: 150ms ease-out;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-page: radial-gradient(circle at top, #ffffff 0, #f1f5f9 45%, #e2e8f0 100%);
+  --bg-board: radial-gradient(circle at top, #f8fafc 0, #e2e8f0 60%, #cbd5e1 100%);
+  --bg-elevated: #ffffff;
+  --bg-elevated-soft: #f8fafc;
+  --card-tint: rgba(249, 115, 22, 0.08);
+  --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --accent: #ea580c;
+  --accent-soft: rgba(234, 88, 12, 0.1);
+  --accent-strong: #fb923c;
+  --border-subtle: rgba(100, 116, 139, 0.3);
+  --spinner-track: rgba(100, 116, 139, 0.3);
+  --text-primary: #1e293b;
+  --text-muted: #475569;
+  --text-strong: #0f172a;
+  --btn-primary-border: rgba(194, 65, 12, 0.25);
+  --btn-primary-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+  --btn-primary-shadow-hover: 0 12px 28px rgba(249, 115, 22, 0.4);
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-bg-hover: #f8fafc;
+  --btn-secondary-border: rgba(100, 116, 139, 0.5);
+  --btn-ghost-border: rgba(100, 116, 139, 0.4);
+  --btn-ghost-text: #c2410c;
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.12);
 }
 
 /* --- Global reset and base --- */
@@ -48,7 +90,7 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   color: var(--text-primary);
-  background: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000 100%);
+  background: var(--bg-page);
   display: flex;
   flex-direction: column;
 }
@@ -62,6 +104,10 @@ body {
 .app-header-inner {
   max-width: 1120px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .app-title {
@@ -111,7 +157,7 @@ body {
   width: 100%;
   height: 100%;
   border-radius: var(--radius-lg);
-  background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+  background: var(--bg-board);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
 }
@@ -135,12 +181,7 @@ canvas#map-canvas {
   gap: 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
-  background: radial-gradient(
-    circle at top,
-    rgba(15, 23, 42, 0.95) 0,
-    rgba(2, 6, 23, 0.98) 60%,
-    rgba(0, 0, 0, 0.98) 100%
-  );
+  background: var(--bg-board);
   z-index: 1;
 }
 
@@ -148,7 +189,7 @@ canvas#map-canvas {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  border: 3px solid rgba(148, 163, 184, 0.3);
+  border: 3px solid var(--spinner-track);
   border-top-color: var(--accent);
   animation: spin 800ms linear infinite;
 }
@@ -164,14 +205,14 @@ canvas#map-canvas {
 .card {
   background: linear-gradient(
       135deg,
-      rgba(249, 115, 22, 0.12),
+      var(--card-tint),
       transparent 32%
     ),
     var(--bg-elevated);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   padding: 0.85rem 0.9rem 0.8rem;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
+  box-shadow: var(--card-shadow);
 }
 
 .card-meta {
@@ -243,37 +284,58 @@ canvas#map-canvas {
 
 .btn-primary {
   background: radial-gradient(circle at top left, var(--accent-strong), #f97316);
-  border-color: rgba(248, 250, 252, 0.08);
+  border-color: var(--btn-primary-border);
   color: #0b1120;
   font-weight: 600;
-  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.45);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 16px 35px rgba(249, 115, 22, 0.55);
+  box-shadow: var(--btn-primary-shadow-hover);
 }
 
 .btn-secondary {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.6);
+  background: var(--btn-secondary-bg);
+  border-color: var(--btn-secondary-border);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(15, 23, 42, 1);
+  background: var(--btn-secondary-bg-hover);
   border-color: var(--accent);
 }
 
 .btn-ghost {
   background: transparent;
-  border-color: rgba(148, 163, 184, 0.4);
-  color: var(--accent-strong);
+  border-color: var(--btn-ghost-border);
+  color: var(--btn-ghost-text);
 }
 
 .btn-ghost:hover:not(:disabled) {
   background: var(--accent-soft);
   border-color: var(--accent-strong);
+}
+
+/* Round icon-only button (theme toggle), 44px touch target */
+.btn-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show the icon for the theme the button switches to */
+.btn-icon .icon-moon,
+:root[data-theme="light"] .btn-icon .icon-sun {
+  display: none;
+}
+
+:root[data-theme="light"] .btn-icon .icon-moon {
+  display: block;
 }
 
 .btn:disabled {
