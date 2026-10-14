@@ -8,8 +8,6 @@
   --bg-board: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
   --bg-elevated: #0b1120;
   --bg-elevated-soft: #020617;
-  --card-tint: rgba(249, 115, 22, 0.12);
-  --card-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
   --accent: #f97316;
   --accent-strong: #fb923c;
   --border-subtle: rgba(148, 163, 184, 0.35);
@@ -26,6 +24,9 @@
   --segment-track: rgba(148, 163, 184, 0.12);
   --segment-selected: #1e293b;
   --switch-off: rgba(148, 163, 184, 0.45);
+  --divider: rgba(148, 163, 184, 0.2);
+  --nav-bg: rgba(11, 17, 32, 0.92);
+  --nav-border: rgba(148, 163, 184, 0.25);
   --level-great: #4ade80;
   --level-good: #a3e635;
   --level-fair: #fbbf24;
@@ -42,8 +43,6 @@
   --bg-board: radial-gradient(circle at top, #f8fafc 0, #e2e8f0 60%, #cbd5e1 100%);
   --bg-elevated: #ffffff;
   --bg-elevated-soft: #f8fafc;
-  --card-tint: rgba(249, 115, 22, 0.08);
-  --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   --accent: #ea580c;
   --accent-strong: #fb923c;
   --border-subtle: rgba(100, 116, 139, 0.3);
@@ -60,6 +59,9 @@
   --segment-track: rgba(100, 116, 139, 0.12);
   --segment-selected: #ffffff;
   --switch-off: rgba(100, 116, 139, 0.45);
+  --divider: rgba(100, 116, 139, 0.2);
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  --nav-border: rgba(100, 116, 139, 0.25);
   --level-great: #15803d;
   --level-good: #4d7c0f;
   --level-fair: #b45309;
@@ -106,7 +108,8 @@ body {
 /* --- Layout --- */
 
 .app-header {
-  padding: 0.9rem 1.25rem 0.4rem;
+  /* Clear the status bar / notch when installed full-screen (viewport-fit) */
+  padding: max(0.9rem, env(safe-area-inset-top)) 1.25rem 0.4rem;
 }
 
 .app-header-inner {
@@ -132,41 +135,31 @@ body {
   font-size: 0.9rem;
 }
 
+/* Fills the space between the header and the nav, with the board centered
+   vertically in it */
 .app-main {
   flex: 1;
   display: flex;
-  gap: 1rem;
-  max-width: 1120px;
-  width: 100%;
-  margin: 0 auto 0.75rem;
-  padding: 0 1.25rem 0.25rem;
-}
-
-/* Controls column */
-
-.control-panel {
-  width: 280px;
-  min-width: 0;
-  display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
 }
-
-/* Board column: the board with its toolbar underneath */
 
 .board-panel {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
+/* On wider screens the board takes the height left after the header,
+   balance line and nav row */
 .map-container {
   position: relative;
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  height: clamp(420px, calc(100dvh - 240px), 820px);
   border-radius: var(--radius-lg);
   background: var(--bg-board);
   box-shadow: var(--shadow-soft);
@@ -216,14 +209,61 @@ canvas#map-canvas {
 .board-balance[data-level="fair"] .balance-label { color: var(--level-fair); }
 .board-balance[data-level="uneven"] .balance-label { color: var(--level-uneven); }
 
-/* Previous / Generate / Next, right under the board */
-.board-toolbar {
-  display: flex;
+/* Previous / New board / Next: a centered row of round buttons under the
+   board on wider screens, a bottom nav bar on phones (see the media query) */
+.board-nav {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
   max-width: 420px;
-  align-self: center;
+  margin: 0 auto 1.25rem;
+}
+
+.nav-item {
+  appearance: none;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.nav-item:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--accent);
+}
+
+.nav-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Labels only show in the phone nav bar; here they stay for screen readers */
+.nav-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* Loading state overlay */
@@ -257,24 +297,7 @@ canvas#map-canvas {
   }
 }
 
-/* --- Cards and typography --- */
-
-.card {
-  background: linear-gradient(
-      135deg,
-      var(--card-tint),
-      transparent 32%
-    ),
-    var(--bg-elevated);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  padding: 0.85rem 0.9rem 0.8rem;
-  box-shadow: var(--card-shadow);
-}
-
-.card-meta {
-  background: var(--bg-elevated-soft);
-}
+/* --- Typography --- */
 
 .card-title {
   margin: 0 0 0.55rem;
@@ -285,20 +308,13 @@ canvas#map-canvas {
   color: var(--text-muted);
 }
 
-.field-group {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-
 .small-text {
   margin: 0;
   font-size: 0.78rem;
   color: var(--text-muted);
 }
 
-/* Segmented control: radios styled as one two-option switch. The input
+/* Segmented control: radios styled as one multi-option switch. The input
    stays in place (transparent) so keyboard and screen readers work. */
 
 .segmented {
@@ -314,6 +330,16 @@ canvas#map-canvas {
   position: relative;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.segmented-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.segmented-3 .segment span {
+  min-height: 64px;
+  gap: 4px;
+  font-size: 0.9rem;
 }
 
 .segment input {
@@ -356,18 +382,29 @@ canvas#map-canvas {
   outline-offset: 2px;
 }
 
-/* On/off switch row */
+/* On/off switch row: label (with a hint line) and switch */
 
 .switch-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 44px;
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
+  min-height: 60px;
+  padding: 0.6rem 0;
+  font-size: 0.97rem;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switch-text small {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .switch {
@@ -457,8 +494,11 @@ canvas#map-canvas {
 }
 
 .btn-generate {
-  flex: 1;
   height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   font-size: 1rem;
 }
 
@@ -473,25 +513,112 @@ canvas#map-canvas {
   justify-content: center;
 }
 
-.btn-icon-lg {
-  width: 48px;
-  height: 48px;
-}
-
-/* Show the icon for the theme the button switches to */
-.btn-icon .icon-moon,
-:root[data-theme="light"] .btn-icon .icon-sun {
-  display: none;
-}
-
-:root[data-theme="light"] .btn-icon .icon-moon {
-  display: block;
-}
-
 .btn:disabled {
   cursor: default;
   opacity: 0.5;
   box-shadow: none;
+}
+
+/* --- Settings dialog --- */
+/* A side panel on wider screens; a full page on phones (media query) */
+
+.settings-dialog {
+  margin: 0 0 0 auto;
+  width: 400px;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0 1.25rem 1.5rem;
+  border: 0;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--bg-elevated-soft);
+  color: var(--text-primary);
+  box-shadow: -24px 0 48px rgba(0, 0, 0, 0.35);
+  overflow-y: auto;
+}
+
+.settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.settings-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.55);
+}
+
+/* Title then close (X) at the right; phones swap in a back arrow first */
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  /* Full-bleed bar: pull out over the dialog's side padding */
+  margin: 0 -1.25rem;
+  padding: env(safe-area-inset-top) 1.25rem 0;
+  background: var(--bg-elevated-soft);
+}
+
+.settings-dialog .icon-back {
+  display: none;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.settings-section {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.settings-section-title {
+  margin: 0 0.25rem 0.5rem;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.settings-note {
+  margin: 0.5rem 0.25rem 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Grouped list of switch rows, divided like a native settings screen */
+.settings-group {
+  padding: 0 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+}
+
+.settings-group .switch-row + .switch-row {
+  border-top: 1px solid var(--divider);
+}
+
+.settings-about {
+  margin: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 
 /* --- Share dialog --- */
@@ -583,40 +710,90 @@ canvas#map-canvas {
     font-size: 1.1rem;
   }
 
-  .app-main {
-    flex-direction: column;
-    padding-bottom: 0.5rem;
-  }
-
-  .control-panel {
-    width: 100%;
-    order: 2;
-  }
-
-  /* Board and toolbar first; don't let the controls below shrink them */
-  .board-panel {
-    order: 1;
-    flex-shrink: 0;
-  }
-
   /* Square board sized to the screen width */
   .map-container {
-    flex: none;
+    height: auto;
     aspect-ratio: 1 / 1;
     max-height: 70vh;
   }
-}
 
-/* Tablets and up: the panel height covers the board and its toolbar */
-@media (min-width: 769px) {
-  .board-panel {
-    height: 70vh;
+  /* Bottom nav bar, like a native app's tab bar. Sticky keeps it on
+     screen on short phones where the page scrolls. */
+  .board-nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    max-width: none;
+    margin: 0;
+    grid-template-columns: 72px minmax(0, 1fr) 72px;
+    gap: 1rem;
+    padding: 0.6rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--nav-border);
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
   }
-}
 
-/* Large desktops */
-@media (min-width: 1280px) {
-  .board-panel {
-    height: 75vh;
+  .nav-item {
+    width: auto;
+    height: 56px;
+    flex-direction: column;
+    gap: 3px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  .nav-item:hover:not(:disabled) {
+    background: transparent;
+  }
+
+  .nav-item:disabled {
+    opacity: 0.4;
+  }
+
+  .nav-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .btn-generate {
+    height: 52px;
+    font-weight: 700;
+  }
+
+  /* Settings as a full page with a back arrow */
+  .settings-dialog {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    background: var(--bg-page);
+    padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  .settings-header {
+    flex-direction: row;
+    justify-content: flex-start;
+    margin: 0 -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    /* Frosted like the nav bar, since the page scrolls under it */
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
+  }
+
+  .settings-dialog .icon-back {
+    display: block;
+  }
+
+  .settings-dialog .icon-close {
+    display: none;
   }
 }

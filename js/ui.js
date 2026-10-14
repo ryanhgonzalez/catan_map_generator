@@ -56,26 +56,28 @@ function $(selectorOrElement) {
   return wrapper;
 }
 
-// When DOM is ready, run the existing init() from catan.js
-// ----- Theme (light / dark) -----
-// A saved choice wins; otherwise follow the OS preference. Runs while the
-// <head> is parsing so the page never flashes the wrong theme.
+// ----- Theme (system / light / dark) -----
+// The saved choice is "system" (the default), "light" or "dark"; "system"
+// follows the OS setting, including live changes. Runs while the <head> is
+// parsing so the page never flashes the wrong theme.
 
 const THEME_STORAGE_KEY = "theme";
+const THEME_CHOICES = ["system", "light", "dark"];
 const THEME_COLORS = { dark: "#0f172a", light: "#ffffff" };
 const prefersLight = window.matchMedia("(prefers-color-scheme: light)");
 
-function getSavedTheme() {
+function getThemeChoice() {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return THEME_CHOICES.includes(saved) ? saved : "system";
   } catch (err) {
-    return null;
+    return "system";
   }
 }
 
-function saveTheme(theme) {
+function saveThemeChoice(choice) {
   try {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    localStorage.setItem(THEME_STORAGE_KEY, choice);
   } catch (err) {
     // Storage unavailable (e.g. private mode); the choice lasts this visit only
   }
@@ -88,39 +90,64 @@ function applyTheme(theme) {
   if (themeColorMeta) {
     themeColorMeta.setAttribute("content", THEME_COLORS[theme]);
   }
-
-  const toggle = document.getElementById("theme-toggle");
-  if (toggle) {
-    const next = theme === "light" ? "dark" : "light";
-    toggle.setAttribute("aria-label", "Switch to " + next + " theme");
-  }
 }
 
-function resolveTheme() {
-  const saved = getSavedTheme();
-  if (saved === "light" || saved === "dark") return saved;
+function resolveTheme(choice) {
+  if (choice === "light" || choice === "dark") return choice;
   return prefersLight.matches ? "light" : "dark";
 }
 
-applyTheme(resolveTheme());
+applyTheme(resolveTheme(getThemeChoice()));
 
-// Track OS changes until the user picks a theme themselves
 prefersLight.addEventListener("change", () => {
-  if (!getSavedTheme()) applyTheme(resolveTheme());
+  if (getThemeChoice() === "system") applyTheme(resolveTheme("system"));
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Re-apply now that the toggle button exists so its label is right
-  applyTheme(resolveTheme());
+  // Re-apply now that <meta name="theme-color"> has been parsed
+  applyTheme(resolveTheme(getThemeChoice()));
 
-  $("#theme-toggle").click(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    const next = current === "light" ? "dark" : "light";
-    saveTheme(next);
-    applyTheme(next);
+  // The Appearance radios in Settings
+  const choice = getThemeChoice();
+  document.querySelectorAll('input[name="theme-choice"]').forEach((input) => {
+    input.checked = input.value === choice;
+    input.addEventListener("change", () => {
+      saveThemeChoice(input.value);
+      applyTheme(resolveTheme(input.value));
+    });
   });
 });
 
+// ----- Dialogs -----
+
+// Close a modal <dialog> when a click lands on its backdrop. Backdrop clicks
+// target the dialog element itself, but so do clicks on its own padding, so
+// this also checks the click was outside the dialog's box.
+function closeDialogOnBackdropClick(dialog) {
+  dialog.addEventListener("click", (event) => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    const outside = event.clientX < box.left || event.clientX > box.right ||
+      event.clientY < box.top || event.clientY > box.bottom;
+    if (outside) dialog.close();
+  });
+}
+
+// ----- Settings dialog -----
+// A full page on phones and a side panel on wider screens (see the CSS);
+// a native <dialog> handles focus and closing with Esc.
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dialog = document.getElementById("settings-dialog");
+
+  $("#settings-button").click(() => dialog.showModal());
+  $("#settings-close").click(() => dialog.close());
+
+  // On wider screens a click on the dimmed backdrop closes the panel
+  closeDialogOnBackdropClick(dialog);
+});
+
+// When DOM is ready, run the existing init() from catan.js
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize board history
   window.boardHistory = [];

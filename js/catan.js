@@ -567,11 +567,8 @@ function setUpShareDialog() {
 
     $("#share-close").click(() => dialog.close());
 
-    // Clicking the dimmed backdrop (the dialog element itself, outside its
-    // content) closes it too
-    dialog.addEventListener("click", (event) => {
-        if (event.target === dialog) dialog.close();
-    });
+    // Clicking the dimmed backdrop closes it too (helper in ui.js)
+    closeDialogOnBackdropClick(dialog);
 
     // Select the whole link on focus so it's easy to copy by hand
     urlInput.addEventListener("focus", () => urlInput.select());
@@ -840,13 +837,13 @@ function loadBoardFromHistory(index) {
 }
 
 function enableButtons() {
-    const genButton = $('button#gen-map-button')[0];
     const goBackButton = $('button#gen-map-back-button')[0];
     const goForwardButton = $('button#gen-map-forward-button')[0];
     const shareButton = $('button#share-catan-board')[0];
     const hasBoard = !!catanMap.hexTiles;
 
-    genButton.textContent = hasBoard ? "New board" : "Generate board";
+    // The label sits in its own span so the button keeps its icon
+    $("#gen-map-label")[0].textContent = hasBoard ? "New board" : "Generate board";
     goBackButton.disabled = currentBoardIndex <= 0;
     goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
     shareButton.disabled = !hasBoard;
