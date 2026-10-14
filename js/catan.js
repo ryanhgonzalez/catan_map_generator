@@ -162,6 +162,9 @@ var HARBOR_OUTER_HALF_WIDTH = 0.28;
 
 var showHarbors = true;
 
+// Hide the number tokens to see the resource layout on its own
+var showNumbers = true;
+
 // Mark the strongest settlement spots on the board
 var showBestSpots = false;
 var BEST_SPOT_COUNT = 3;
@@ -675,6 +678,13 @@ function init() {
         harborsToggle.addEventListener("change", () => {
             showHarbors = harborsToggle.checked;
             catanMap.resize();
+            catanMap.draw();
+        });
+
+        const numbersToggle = document.getElementById("show-numbers");
+        showNumbers = numbersToggle.checked;
+        numbersToggle.addEventListener("change", () => {
+            showNumbers = numbersToggle.checked;
             catanMap.draw();
         });
 
@@ -1339,8 +1349,8 @@ HexTile.prototype.draw = function() {
 	this.yCenter = canvasCenterY + dy*this.gridY;
 	
 	this.drawBase();
-	// Don't draw number if desert
-	if (this.number) {
+	// Don't draw number if desert, or while numbers are hidden
+	if (this.number && showNumbers) {
 		this.drawNumber();
 	}
 }
