@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // Exit animations per dialog (see "Dialog transitions" in the CSS)
-const DIALOG_EXIT_ANIMATIONS = ["slide-out-right", "pop-out"];
+const DIALOG_EXIT_ANIMATIONS = ["slide-out-right", "slide-out-down", "pop-out"];
 
 /**
  * Close a modal <dialog> after its exit animation. Browsers animate a

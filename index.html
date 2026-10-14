@@ -13,6 +13,7 @@
   <script src="js/vendor/qrcode.js"></script>
   <script src="js/catan.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/install.js"></script>
 
 </head>
 <body>
@@ -211,6 +212,20 @@
       <p class="settings-note">Applies to the next board you generate.</p>
     </fieldset>
 
+    <!-- Shown by install.js when the app can be installed and isn't yet -->
+    <section id="install-section" class="settings-section" aria-labelledby="install-section-title" hidden>
+      <h3 id="install-section-title" class="settings-section-title">App</h3>
+      <div class="settings-group">
+        <button id="install-open" class="settings-row-button" type="button">
+          <span class="switch-text">Install app<small>Add it to your home screen</small></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
     <section class="settings-section" aria-labelledby="about-title">
       <h3 id="about-title" class="settings-section-title">About</h3>
       <p class="settings-about">
@@ -239,6 +254,47 @@
     <div class="share-actions">
       <button id="share-copy" class="btn btn-primary" type="button">Copy link</button>
       <button id="share-native" class="btn btn-secondary" type="button" hidden>Share…</button>
+    </div>
+  </dialog>
+
+  <!-- Install prompt: a bottom sheet on phones, a card on wider screens -->
+  <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-title" aria-describedby="install-text">
+    <img class="install-icon" src="icons/icon-192.png" alt="" width="72" height="72" />
+    <!-- Focus lands on the title when it opens, not on a button -->
+    <h2 id="install-title" class="install-title" tabindex="-1" autofocus>Install Catan Board Generator</h2>
+    <p id="install-text" class="install-text">
+      Add it to your home screen for one-tap, full-screen access. It works
+      offline too, so it's ready at the table.
+    </p>
+
+    <!-- iPhone and iPad can't install from a button, so show the steps -->
+    <ol id="install-ios-steps" class="install-steps" hidden>
+      <li>
+        <span class="install-step-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+            <path d="M16 6l-4-4-4 4" />
+            <path d="M12 2v13" />
+          </svg>
+        </span>
+        <span>Tap <strong>Share</strong> in your browser's toolbar</span>
+      </li>
+      <li>
+        <span class="install-step-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+        </span>
+        <span>Choose <strong>Add to Home Screen</strong></span>
+      </li>
+    </ol>
+
+    <div class="install-actions">
+      <button id="install-dismiss" class="btn btn-secondary" type="button">Not now</button>
+      <button id="install-confirm" class="btn btn-primary" type="button">Install</button>
     </div>
   </dialog>
 
