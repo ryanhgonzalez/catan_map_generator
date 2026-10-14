@@ -565,10 +565,10 @@ function setUpShareDialog() {
         dialog.showModal();
     });
 
-    $("#share-close").click(() => dialog.close());
+    $("#share-close").click(() => closeDialog(dialog));
 
-    // Clicking the dimmed backdrop closes it too (helper in ui.js)
-    closeDialogOnBackdropClick(dialog);
+    // Esc and backdrop clicks close it with the same animation (ui.js)
+    setUpDialogClosing(dialog);
 
     // Select the whole link on focus so it's easy to copy by hand
     urlInput.addEventListener("focus", () => urlInput.select());

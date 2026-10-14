@@ -120,31 +120,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ----- Dialogs -----
 
-// Close a modal <dialog> when a click lands on its backdrop. Backdrop clicks
-// target the dialog element itself, but so do clicks on its own padding, so
-// this also checks the click was outside the dialog's box.
-function closeDialogOnBackdropClick(dialog) {
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+// Exit animations per dialog (see "Dialog transitions" in the CSS)
+const DIALOG_EXIT_ANIMATIONS = ["slide-out-right", "pop-out"];
+
+/**
+ * Close a modal <dialog> after its exit animation. Browsers animate a
+ * dialog opening but close it instantly, so this adds .is-closing, waits
+ * for the animation, then closes. A timer backs up the animationend event.
+ */
+function closeDialog(dialog) {
+  if (!dialog.open || dialog.classList.contains("is-closing")) return;
+  if (prefersReducedMotion.matches) {
+    dialog.close();
+    return;
+  }
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    dialog.removeEventListener("animationend", onEnd);
+    dialog.classList.remove("is-closing");
+    dialog.close();
+  };
+  // Only the dialog's own exit animation, not its ::backdrop's
+  const onEnd = (event) => {
+    if (event.target === dialog && DIALOG_EXIT_ANIMATIONS.includes(event.animationName)) {
+      finish();
+    }
+  };
+  dialog.addEventListener("animationend", onEnd);
+  dialog.classList.add("is-closing");
+  setTimeout(finish, 400);
+}
+
+/**
+ * Route a dialog's other ways of closing through closeDialog() so they
+ * animate too:
+ * - Esc (the "cancel" event, which would otherwise close it instantly)
+ * - a click on the backdrop. Backdrop clicks target the dialog element
+ *   itself, but so do clicks on its own padding, so this also checks the
+ *   click was outside the dialog's box.
+ */
+function setUpDialogClosing(dialog) {
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialog(dialog);
+  });
+
   dialog.addEventListener("click", (event) => {
     if (event.target !== dialog) return;
     const box = dialog.getBoundingClientRect();
     const outside = event.clientX < box.left || event.clientX > box.right ||
       event.clientY < box.top || event.clientY > box.bottom;
-    if (outside) dialog.close();
+    if (outside) closeDialog(dialog);
   });
 }
 
 // ----- Settings dialog -----
 // A full page on phones and a side panel on wider screens (see the CSS);
-// a native <dialog> handles focus and closing with Esc.
+// a native <dialog> handles focus.
 
 document.addEventListener("DOMContentLoaded", () => {
   const dialog = document.getElementById("settings-dialog");
 
   $("#settings-button").click(() => dialog.showModal());
-  $("#settings-close").click(() => dialog.close());
+  $("#settings-close").click(() => closeDialog(dialog));
 
-  // On wider screens a click on the dimmed backdrop closes the panel
-  closeDialogOnBackdropClick(dialog);
+  // Esc, and on wider screens a click on the dimmed backdrop
+  setUpDialogClosing(dialog);
 });
 
 // When DOM is ready, run the existing init() from catan.js

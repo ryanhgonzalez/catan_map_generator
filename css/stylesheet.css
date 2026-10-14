@@ -702,6 +702,77 @@ canvas#map-canvas {
   display: none;
 }
 
+/* --- Dialog transitions --- */
+/* Opening animates from CSS alone. Closing adds .is-closing first and
+   closeDialog() in ui.js waits for the exit animation before closing. */
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+}
+
+@keyframes slide-out-right {
+  to { transform: translateX(100%); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+
+@keyframes pop-out {
+  to { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes fade-out {
+  to { opacity: 0; }
+}
+
+/* Settings slides in from the right, like a page being pushed */
+.settings-dialog[open] {
+  animation: slide-in-right 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.settings-dialog[open]::backdrop {
+  animation: fade-in 280ms ease-out;
+}
+
+.settings-dialog.is-closing {
+  animation: slide-out-right 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.settings-dialog.is-closing::backdrop {
+  animation: fade-out 220ms ease-in forwards;
+}
+
+/* The share card fades and scales up into place */
+.share-dialog[open] {
+  animation: pop-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.share-dialog[open]::backdrop {
+  animation: fade-in 220ms ease-out;
+}
+
+.share-dialog.is-closing {
+  animation: pop-out 160ms ease-in forwards;
+}
+
+.share-dialog.is-closing::backdrop {
+  animation: fade-out 160ms ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-dialog,
+  .settings-dialog::backdrop,
+  .share-dialog,
+  .share-dialog::backdrop {
+    animation: none !important;
+  }
+}
+
 /* --- Responsive behavior --- */
 
 /* Phones and small screens */
