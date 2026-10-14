@@ -36,6 +36,9 @@ body {
    the viewport, e.g. the stacked mobile layout */
 html {
   min-height: 100%;
+  /* Disable double-tap-to-zoom (e.g. rapid Generate taps on iOS) while
+     keeping pinch zoom and scrolling */
+  touch-action: manipulation;
 }
 
 body {
