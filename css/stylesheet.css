@@ -5,9 +5,10 @@
 :root {
   color-scheme: dark;
   --bg-page: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000 100%);
-  --sea: radial-gradient(ellipse at 50% 45%, #1e5a8a 0, #154670 40%, #0c2c4c 75%, #081f38 100%);
-  --sea-border: rgba(125, 211, 252, 0.22);
-  --sea-shadow: 0 0 0 1px rgba(2, 6, 23, 0.6), 0 18px 44px rgba(8, 47, 73, 0.55);
+  /* Board card: a slightly lighter shade of the page background */
+  --board-bg: radial-gradient(ellipse at 50% 40%, #1c2638 0, #131c2d 55%, #0c1322 100%);
+  --board-border: rgba(148, 163, 184, 0.18);
+  --board-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   --pill-bg: rgba(2, 6, 23, 0.72);
   --pill-border: rgba(148, 163, 184, 0.25);
   --bg-elevated: #0b1120;
@@ -44,9 +45,10 @@
 :root[data-theme="light"] {
   color-scheme: light;
   --bg-page: radial-gradient(circle at top, #ffffff 0, #f1f5f9 45%, #e2e8f0 100%);
-  --sea: radial-gradient(ellipse at 50% 45%, #d6ecfb 0, #b9ddf6 45%, #94c6ec 100%);
-  --sea-border: rgba(14, 116, 144, 0.25);
-  --sea-shadow: 0 18px 40px rgba(14, 116, 144, 0.18);
+  /* Board card: a slightly lighter shade of the page background */
+  --board-bg: radial-gradient(ellipse at 50% 40%, #ffffff 0, #f8fafc 55%, #eef2f7 100%);
+  --board-border: rgba(100, 116, 139, 0.2);
+  --board-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
   --pill-bg: rgba(255, 255, 255, 0.85);
   --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
@@ -188,8 +190,7 @@ body {
   gap: 0.75rem;
 }
 
-/* The board card: a sea for the board to sit in, with the balance pill at
-   its bottom. On wider screens it takes the height left after the header
+/* The board card, with the balance pill at its bottom. On wider screens it takes the height left after the header
    and nav row. */
 .map-container {
   position: relative;
@@ -197,10 +198,10 @@ body {
   height: clamp(420px, calc(100dvh - 200px), 820px);
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--sea-border);
+  border: 1px solid var(--board-border);
   border-radius: 24px;
-  background: var(--sea);
-  box-shadow: var(--sea-shadow);
+  background: var(--board-bg);
+  box-shadow: var(--board-shadow);
   overflow: hidden;
 }
 
@@ -327,7 +328,7 @@ canvas#map-canvas {
   gap: 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
-  background: var(--sea);
+  background: var(--board-bg);
   z-index: 1;
 }
 
@@ -1015,7 +1016,7 @@ canvas#map-canvas {
     padding: 0 0.75rem 0.9rem;
   }
 
-  /* A tall sea card: up to 520px, less on shorter phones so the header and
+  /* A tall board card: up to 520px, less on shorter phones so the header and
      nav bar still fit */
   .map-container {
     height: min(520px, calc(100dvh - 240px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
