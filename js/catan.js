@@ -183,6 +183,33 @@ expandedMap.centerCoords = [[0,1],[0,-1]];
 var MAX_SOLVER_STEPS = 5000;
 var SOLVER_TRIES = 5;
 
+// ----- Fairness score -----
+
+// Dots on each number token: how many of the 36 dice combinations roll it
+var PIPS = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1 };
+
+// Score thresholds, set from 5,000 generated boards per map so a typical
+// board (default rules) scores about 7 and roughly 1 in 12 scores 9+.
+// Resource balance: how far the worst-off resource's dots stray from its
+// fair share for its tile count before that part scores 0 (typical: 30%).
+var BALANCE_RESOURCE_LIMIT = 0.7;
+// Hot spots: the richest corner's dots. At or under OK scores full marks;
+// at MAX or above scores 0. With 6 & 8 apart the richest is usually 12-13.
+var BALANCE_SPOT_OK = 12;
+var BALANCE_SPOT_MAX = 15;
+
+function pipsFor(number) {
+	return PIPS[number] || 0;
+}
+
+function clamp01(x) {
+	return Math.max(0, Math.min(1, x));
+}
+
+function capitalize(word) {
+	return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 var BALANCE_RULES_STORAGE_KEY = "balanceRules";
 
 function loadBalanceRules() {
@@ -472,6 +499,7 @@ function showBoardState(state) {
     catanMap.resize();
     catanMap.draw();
     updateShareUrl();
+    updateBalanceDisplay();
 }
 
 /**
@@ -485,6 +513,21 @@ function updateShareUrl() {
         url.searchParams.set('board', encoded);
         window.history.replaceState({}, '', url);
     }
+}
+
+/**
+ * Show the board's fairness score under it.
+ */
+function updateBalanceDisplay() {
+    const el = document.getElementById("board-balance");
+    if (!el || !catanMap.hexTiles) return;
+
+    const balance = catanMap.getBalance();
+    el.querySelector(".balance-score").textContent = balance.score + "/10";
+    el.querySelector(".balance-label").textContent = balance.label;
+    el.querySelector(".balance-reason").textContent = balance.reason;
+    el.dataset.level = balance.label.toLowerCase();
+    el.hidden = false;
 }
 
 // ----- FUNCTIONS -----
@@ -664,6 +707,7 @@ function generate() {
     catanMap.resize();
     catanMap.draw();
     updateShareUrl();
+    updateBalanceDisplay();
 
     // History holds every board shown, with currentBoardIndex on the one on
     // screen. Generating after going back drops the boards that were ahead.
@@ -841,6 +885,84 @@ CatanMap.prototype.generate = function() {
 	// Shuffle harbor types onto the fixed coastline slots
 	this.setHarborTypes(shuffle(def.harborTypes));
 	
+}
+/**
+ * Every corner on the board where a settlement could go, with the tiles
+ * that touch it (1 to 3). Positions are in hex-size units from the center.
+ */
+CatanMap.prototype.getIntersections = function() {
+	var spots = {};
+	this.hexTiles.forEach(function(tile) {
+		var cx = tile.gridX * 0.75;
+		var cy = tile.gridY * Math.sin(Math.PI/3);
+		for (var k = 0; k < 6; k += 1) {
+			var x = cx + Math.cos(k * Math.PI / 3);
+			var y = cy + Math.sin(k * Math.PI / 3);
+			// Rounded so the same corner seen from neighboring tiles matches
+			var key = Math.round(x * 100) + "," + Math.round(y * 100);
+			if (!spots[key]) spots[key] = { x: x, y: y, tiles: [] };
+			spots[key].tiles.push(tile);
+		}
+	});
+	return Object.keys(spots).map(function(key) { return spots[key]; });
+}
+/**
+ * Rate how fair the board is, 0-10, from two checks:
+ * - resource balance: each resource's total dots against its fair share
+ *   for its number of tiles; the worst-off resource counts
+ * - hot spots: the dots at the richest corner
+ * Returns {score, label, reason}.
+ */
+CatanMap.prototype.getBalance = function() {
+	var pips = {};
+	var tileCounts = {};
+	var totalPips = 0;
+	var landTiles = 0;
+	this.hexTiles.forEach(function(tile) {
+		if (tile.resourceType === "desert") return;
+		pips[tile.resourceType] = (pips[tile.resourceType] || 0) + pipsFor(tile.number);
+		tileCounts[tile.resourceType] = (tileCounts[tile.resourceType] || 0) + 1;
+		totalPips += pipsFor(tile.number);
+		landTiles += 1;
+	});
+
+	var pipsPerTile = totalPips / landTiles;
+	var worst = { resource: null, deviation: 0 };
+	Object.keys(pips).forEach(function(resource) {
+		var deviation = pips[resource] / (tileCounts[resource] * pipsPerTile) - 1;
+		if (Math.abs(deviation) > Math.abs(worst.deviation)) {
+			worst = { resource: resource, deviation: deviation };
+		}
+	});
+	var resourceScore = clamp01(1 - Math.abs(worst.deviation) / BALANCE_RESOURCE_LIMIT);
+
+	var richestCorner = 0;
+	this.getIntersections().forEach(function(spot) {
+		var spotPips = spot.tiles.reduce(function(sum, tile) {
+			return sum + pipsFor(tile.number);
+		}, 0);
+		richestCorner = Math.max(richestCorner, spotPips);
+	});
+	var spotScore = clamp01(
+		(BALANCE_SPOT_MAX - richestCorner) / (BALANCE_SPOT_MAX - BALANCE_SPOT_OK)
+	);
+
+	var score = Math.round(10 * (0.6 * resourceScore + 0.4 * spotScore));
+	var label = score >= 9 ? "Great" : score >= 7 ? "Good" : score >= 5 ? "Fair" : "Uneven";
+
+	// Explain whichever check cost the most points
+	var reason;
+	if (score >= 9) {
+		reason = "Production is evenly spread";
+	} else if (0.6 * (1 - resourceScore) >= 0.4 * (1 - spotScore)) {
+		reason = capitalize(worst.resource) + (worst.deviation < 0
+			? " is short on production"
+			: " gets more than its share");
+	} else {
+		reason = "One corner gets " + richestCorner + " dots";
+	}
+
+	return { score: score, label: label, reason: reason };
 }
 /**
  * For each hex on the current map, the keys of the hexes touching it.
