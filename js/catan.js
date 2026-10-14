@@ -154,10 +154,11 @@ expandedMap.harborTypes = [
 // harbor sits on the edge of a coastal tile facing one of these directions.
 var HEX_DIRECTIONS = [[0,-2],[2,-1],[2,1],[0,2],[-2,1],[-2,-1]];
 
-// In units of the hex size: how far a harbor badge sits beyond the coast,
-// and its radius
-var HARBOR_OFFSET = 0.5;
-var HARBOR_RADIUS = 0.28;
+// A harbor is a dock: a wedge whose inner side is the coastal edge itself
+// (so it spans the two corners that trade there). In units of the hex
+// size: how far it reaches out to sea, and half the width of its outer side.
+var HARBOR_DEPTH = 0.42;
+var HARBOR_OUTER_HALF_WIDTH = 0.28;
 
 var showHarbors = true;
 
@@ -813,7 +814,7 @@ CatanMap.prototype.drawHarbors = function() {
 		var tile = this.coordToTile[[harbor.gridX, harbor.gridY].toString()];
 		if (!tile) continue;
 
-		// Keep line cap/join changes from leaking into the tile drawing
+		// Keep line join and stroke changes from leaking into the tile drawing
 		drawingContext.save();
 
 		// Half the vector to the missing neighbor reaches the edge midpoint
@@ -826,67 +827,63 @@ CatanMap.prototype.drawHarbors = function() {
 		var midX = tile.xCenter + vx;
 		var midY = tile.yCenter + vy;
 
-		var badgeX = midX + nx * HARBOR_OFFSET * size;
-		var badgeY = midY + ny * HARBOR_OFFSET * size;
-		var radius = HARBOR_RADIUS * size;
-
-		// Piers to the edge's two corners, the settlement spots that trade
-		// here. Dark under gold so they read on light and dark backgrounds.
-		var corners = [
-			[midX - ny * size / 2, midY + nx * size / 2],
-			[midX + ny * size / 2, midY - nx * size / 2]
-		];
-		drawingContext.lineCap = "round";
-		[["rgba(11,17,32,0.55)", 2.4], ["#FAEB96", 1.2]].forEach(function(pass) {
-			drawingContext.strokeStyle = pass[0];
-			drawingContext.lineWidth = pass[1] * lineWidth;
-			drawingContext.beginPath();
-			corners.forEach(function(corner) {
-				drawingContext.moveTo(badgeX, badgeY);
-				drawingContext.lineTo(corner[0], corner[1]);
-			});
-			drawingContext.stroke();
-		});
-
-		// Badge: 3:1 is a plain white token; 2:1 shows the resource's art
+		// Unit vector along the edge, and the dock's center (for the art and
+		// the label)
+		var ex = -ny;
+		var ey = nx;
+		var depth = HARBOR_DEPTH * size;
+		var outerHalf = HARBOR_OUTER_HALF_WIDTH * size;
+		var centerX = midX + nx * depth / 2;
+		var centerY = midY + ny * depth / 2;
+		
+		// Inner side = the coastal edge between its two corners; outer side
+		// is shorter, giving the wedge shape of the game's harbor pieces
 		drawingContext.beginPath();
-		drawingContext.arc(badgeX, badgeY, radius, 0, 2 * Math.PI, false);
+		drawingContext.moveTo(midX - ex * size / 2, midY - ey * size / 2);
+		drawingContext.lineTo(midX + ex * size / 2, midY + ey * size / 2);
+		drawingContext.lineTo(midX + nx * depth + ex * outerHalf, midY + ny * depth + ey * outerHalf);
+		drawingContext.lineTo(midX + nx * depth - ex * outerHalf, midY + ny * depth - ey * outerHalf);
+		drawingContext.closePath();
+		
+		// 3:1 is plain white; 2:1 shows the resource's art
 		if (harbor.type === "any") {
 			drawingContext.fillStyle = "#FFFFFF";
 			drawingContext.fill();
 		} else {
 			var img = resourceTypeToImageCanvas[harbor.type];
+			var artHalf = 0.55 * size;
 			drawingContext.save();
 			drawingContext.clip();
 			// Center crop skips the tile scan's cream border
 			drawingContext.drawImage(
 				img,
 				img.width * 0.2, img.height * 0.2, img.width * 0.6, img.height * 0.6,
-				badgeX - radius, badgeY - radius, 2 * radius, 2 * radius
+				centerX - artHalf, centerY - artHalf, 2 * artHalf, 2 * artHalf
 			);
 			drawingContext.restore();
 		}
-		drawingContext.strokeStyle = "#000000";
-		drawingContext.lineWidth = lineWidth;
+		// Gold rim, matching the tile borders
+		drawingContext.strokeStyle = "#FAEB96";
+		drawingContext.lineWidth = 1.25 * lineWidth;
+		drawingContext.lineJoin = "round";
 		drawingContext.stroke();
-
-		var fontSizePx = Math.round(0.22 * size);
+		
+		var fontSizePx = Math.round(0.23 * size);
 		drawingContext.font = "bold " + fontSizePx + "px sans-serif";
 		drawingContext.textAlign = "center";
 		drawingContext.textBaseline = "middle";
 		var label = harbor.type === "any" ? "3:1" : "2:1";
-		var textY = badgeY + Math.round(0.06 * fontSizePx);
+		var textY = centerY + Math.round(0.06 * fontSizePx);
 		if (harbor.type === "any") {
-			drawingContext.fillStyle = "#000000";
+			drawingContext.fillStyle = "#0b1120";
 		} else {
 			// White with a dark outline to stay legible over the artwork
 			drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
 			drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
-			drawingContext.lineJoin = "round";
-			drawingContext.strokeText(label, badgeX, textY);
+			drawingContext.strokeText(label, centerX, textY);
 			drawingContext.fillStyle = "#FFFFFF";
 		}
-		drawingContext.fillText(label, badgeX, textY);
+		drawingContext.fillText(label, centerX, textY);
 
 		drawingContext.restore();
 	}
@@ -895,16 +892,19 @@ CatanMap.prototype.resize = function() {
 /* Size = Height / ( (coordSpacing + 2) * Math.sin(Math.PI/3) )
  * Size = Width / ( (coordSpacing * (1 + Math.cos(Math.PI/3)) / 2) + 2 )
 */
-	// Harbor badges stick out past the tiles; leave room for them. A badge
-	// reaches (apothem + offset + radius) out from its tile's center, along
-	// the edge normal: straight up/down, or 30 degrees off horizontal.
+	// Harbor docks stick out past the tiles; leave room for them. On a top or
+	// bottom edge a dock adds its depth. On a side edge (normal 30 degrees off
+	// horizontal) its outer corner reaches (apothem + depth) * cos 30 along
+	// the normal plus half its outer width * sin 30 along the edge, measured
+	// against the tile's half-width of 1.
 	var marginX = 0;
 	var marginY = 0;
 	if (showHarbors && this.harbors.length) {
 		var apothem = Math.sin(Math.PI/3);
-		var reach = apothem + HARBOR_OFFSET + HARBOR_RADIUS;
-		marginX = Math.max(0, reach * Math.cos(Math.PI/6) - 1);
-		marginY = reach - apothem;
+		marginX = Math.max(0,
+			(apothem + HARBOR_DEPTH) * Math.cos(Math.PI/6) +
+			HARBOR_OUTER_HALF_WIDTH * Math.sin(Math.PI/6) - 1);
+		marginY = HARBOR_DEPTH;
 	}
 
 	var wSize = (canvasWidth-10) /
