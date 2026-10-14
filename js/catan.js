@@ -162,6 +162,10 @@ var HARBOR_OUTER_HALF_WIDTH = 0.28;
 
 var showHarbors = true;
 
+// Mark the strongest settlement spots on the board
+var showBestSpots = false;
+var BEST_SPOT_COUNT = 3;
+
 // ----- Balance rules -----
 
 // Which placement rules the generator enforces; the switches in the
@@ -566,6 +570,13 @@ function init() {
         harborsToggle.addEventListener("change", () => {
             showHarbors = harborsToggle.checked;
             catanMap.resize();
+            catanMap.draw();
+        });
+
+        const bestSpotsToggle = document.getElementById("show-best-spots");
+        showBestSpots = bestSpotsToggle.checked;
+        bestSpotsToggle.addEventListener("change", () => {
+            showBestSpots = bestSpotsToggle.checked;
             catanMap.draw();
         });
 
@@ -1043,8 +1054,77 @@ CatanMap.prototype.draw = function() {
 		if (showHarbors) {
 			this.drawHarbors();
 		}
+		if (showBestSpots) {
+			this.drawBestSpots();
+		}
 	}
 
+}
+/**
+ * The strongest places for a settlement: corners ranked by total dots,
+ * ties going to the corner touching more different resources. Corners
+ * next to an already picked one are skipped, since settlements can't be
+ * built on neighboring corners.
+ */
+CatanMap.prototype.getBestSpots = function(count) {
+	var ranked = this.getIntersections().map(function(spot) {
+		var resources = {};
+		spot.tiles.forEach(function(tile) {
+			if (tile.resourceType !== "desert") resources[tile.resourceType] = true;
+		});
+		return {
+			x: spot.x,
+			y: spot.y,
+			pips: spot.tiles.reduce(function(sum, tile) { return sum + pipsFor(tile.number); }, 0),
+			variety: Object.keys(resources).length
+		};
+	}).sort(function(a, b) {
+		return (b.pips - a.pips) || (b.variety - a.variety);
+	});
+
+	var picked = [];
+	for (var i = 0; i < ranked.length && picked.length < count; i += 1) {
+		var spot = ranked[i];
+		// Neighboring corners are one hex side (1 unit) apart
+		var tooClose = picked.some(function(p) {
+			return Math.hypot(p.x - spot.x, p.y - spot.y) < 1.5;
+		});
+		if (!tooClose) picked.push(spot);
+	}
+	return picked;
+}
+CatanMap.prototype.drawBestSpots = function() {
+	var spots = this.getBestSpots(BEST_SPOT_COUNT);
+	var radius = 0.27 * size;
+
+	drawingContext.save();
+	drawingContext.textAlign = "center";
+	drawingContext.textBaseline = "middle";
+	drawingContext.font = "bold " + Math.round(0.32 * size) + "px sans-serif";
+
+	spots.forEach(function(spot, rank) {
+		// Corner positions are in hex-size units from the board center
+		var x = canvasCenterX + spot.x * size;
+		var y = canvasCenterY + spot.y * size;
+
+		// Orange marker with a white ring and dark edge, to stand out on
+		// any tile art
+		drawingContext.beginPath();
+		drawingContext.arc(x, y, radius, 0, 2 * Math.PI, false);
+		drawingContext.fillStyle = "#f97316";
+		drawingContext.fill();
+		drawingContext.lineWidth = 2.6 * lineWidth;
+		drawingContext.strokeStyle = "#0b1120";
+		drawingContext.stroke();
+		drawingContext.lineWidth = 1.3 * lineWidth;
+		drawingContext.strokeStyle = "#FFFFFF";
+		drawingContext.stroke();
+
+		drawingContext.fillStyle = "#0b1120";
+		drawingContext.fillText(String(rank + 1), x, y + Math.round(0.02 * size));
+	});
+
+	drawingContext.restore();
 }
 CatanMap.prototype.drawHarbors = function() {
 	for (var i = 0; i < this.harbors.length; i += 1) {
