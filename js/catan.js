@@ -447,6 +447,12 @@ function loadBoardFromDecodedState(state) {
     if (!state || !Array.isArray(state.tiles)) return;
 
     showBoardState(state);
+
+    // Start the game type switch on the shared board's type, so New board
+    // keeps making boards like the one that was shared
+    const gameType = catanMap.mapDefinition === expandedMap ? "expanded" : "normal";
+    $(`input[name=game-type][value=${gameType}]`)[0].checked = true;
+
     boardHistory = [state];
     currentBoardIndex = 0;
     enableButtons();
@@ -471,20 +477,14 @@ function snapshotBoard() {
  * Put a board state ({tiles, harborTypes}) on screen and in the URL.
  */
 function showBoardState(state) {
-    // Determine map type based on tile count, and match the game type switch
-    // (setting .checked doesn't fire "change", so this won't regenerate)
-    let gameType = null;
+    // Determine map type based on tile count. The game type switch is left
+    // alone: it picks the type of the next generated board.
     if (state.tiles.length === normalMap.coordinatesArray.length) {
         catanMap.defineMap(normalMap);
-        gameType = "normal";
     } else if (state.tiles.length === expandedMap.coordinatesArray.length) {
         catanMap.defineMap(expandedMap);
-        gameType = "expanded";
     } else {
         console.warn("Unknown map size; cannot set map definition correctly.");
-    }
-    if (gameType) {
-        $(`input[name=game-type][value=${gameType}]`)[0].checked = true;
     }
 
     catanMap.hexTiles = state.tiles.map(t => {
@@ -663,11 +663,6 @@ function init() {
         const goForwardButton = $('button#gen-map-forward-button')[0];
         $(goForwardButton).click(goForward);
 
-        // Switching game type rolls a board of the new type straight away
-        document.querySelectorAll('input[name=game-type]').forEach(input => {
-            input.addEventListener("change", generate);
-        });
-
         // Hiding harbors also gives the tiles the room the harbors used
         const harborsToggle = document.getElementById("show-harbors");
         // The browser may restore the checkbox state on reload
@@ -692,15 +687,14 @@ function init() {
             catanMap.draw();
         });
 
-        // Balance rules: restore the saved choices, and roll a new board
-        // whenever one changes so its effect shows straight away
+        // Balance rules: restore the saved choices. Changes apply to the next
+        // board generated, like the game type.
         Object.assign(balanceRules, loadBalanceRules());
         document.querySelectorAll('input[data-rule]').forEach(input => {
             input.checked = !!balanceRules[input.dataset.rule];
             input.addEventListener("change", () => {
                 balanceRules[input.dataset.rule] = input.checked;
                 saveBalanceRules();
-                generate();
             });
         });
 
