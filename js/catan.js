@@ -5,6 +5,9 @@ var drawingContext;
 
 var canvasCenterX;
 var canvasCenterY;
+// Canvas size in CSS pixels (the backing store is scaled by devicePixelRatio)
+var canvasWidth;
+var canvasHeight;
 
 // ----- Hexagon drawing parameters -----
 
@@ -688,9 +691,9 @@ CatanMap.prototype.resize = function() {
 /* Size = Height / ( (coordSpacing + 2) * Math.sin(Math.PI/3) )
  * Size = Width / ( (coordSpacing * (1 + Math.cos(Math.PI/3)) / 2) + 2 )
 */
-	var wSize = (mapCanvas.width-10) / 
+	var wSize = (canvasWidth-10) /
         ( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 );
-    var hSize = (mapCanvas.height-10) / 
+    var hSize = (canvasHeight-10) /
         ( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) );
     size = Math.floor(Math.min(wSize, hSize));
     dx = size * (1 + Math.cos(Math.PI/3)) / 2;
@@ -741,7 +744,6 @@ function HexTile() {
 	this.number;
 }
 HexTile.prototype.strokeStyle = strokeStyle;
-HexTile.prototype.lineWidth = lineWidth;
 HexTile.prototype.hexColorMap = resourceTypeToColor;
 HexTile.prototype.size = size;
 HexTile.prototype.setResourceType = function(resourceType) {
@@ -773,14 +775,13 @@ HexTile.prototype.draw = function() {
 	}
 }
 HexTile.prototype.drawBase = function() {
-	var responsiveLineWidth = Math.max(1, Math.min(3, size / 30));
-
 	if (mapStyle == "retro") {
         drawingContext.lineWidth = Math.max(3, Math.min(10, size / 15));
 		drawingContext.fillStyle = "rgba(255,255,255,0)";
 		drawingContext.strokeStyle = "#FAEB96";
 	} else {
-		drawingContext.lineWidth = this.lineWidth;
+		// Global lineWidth is recomputed by CatanMap.resize()
+		drawingContext.lineWidth = lineWidth;
 		drawingContext.fillStyle = this.fillStyle;
 		drawingContext.strokeStyle = this.strokeStyle;
 	}
@@ -825,11 +826,10 @@ HexTile.prototype.drawBase = function() {
 	
 }
 HexTile.prototype.drawNumber = function() {
-	var responsiveLineWidth = Math.max(1, Math.min(3, size / 30));
 	
 	drawingContext.fillStyle = "#FFFFFF";
 	drawingContext.strokeStyle = "#000000";
-	drawingContext.lineWidth = responsiveLineWidth;
+	drawingContext.lineWidth = lineWidth;
 	
 	drawingContext.beginPath();
 	drawingContext.arc(this.xCenter, this.yCenter, 0.375 * size,
@@ -839,10 +839,12 @@ HexTile.prototype.drawNumber = function() {
 	drawingContext.fill();
 	drawingContext.stroke();
 	
-	var fontSizePt = Math.ceil(30/40*(.45*size-8)+6);
-	
-	drawingContext.font = "bold " + fontSizePt + "pt sans-serif";
+	// Scale with the token (radius 0.375*size) so two digits still fit
+	var fontSizePx = Math.round(0.42 * size);
+
+	drawingContext.font = "bold " + fontSizePx + "px sans-serif";
 	drawingContext.textAlign = "center";
+	drawingContext.textBaseline = "middle";
 	if ( this.isHighlyProductive() ) {
 		drawingContext.fillStyle = "#FF0000";
 	} else {
@@ -851,7 +853,8 @@ HexTile.prototype.drawNumber = function() {
 	drawingContext.fillText(
 		this.number.toString(),
 		this.xCenter,
-		this.yCenter + Math.ceil( 0.85 * fontSizePt/2 )
+		// Nudge down slightly: "middle" sits a touch high for digits
+		this.yCenter + Math.round(0.06 * fontSizePx)
 	);
 	
 }
@@ -902,10 +905,16 @@ function addCanvas() {
 function sizeCanvas() {
     var mapContainer = $("div#map-container")[0];
     if (!mapCanvas) return;
-    $(mapCanvas).attr("width", $(mapContainer).width());
-    $(mapCanvas).attr("height", $(mapContainer).height());
-    canvasCenterY = mapCanvas.height/2;
-    canvasCenterX = mapCanvas.width/2;
+    // Back the canvas with device pixels so it stays sharp on high-DPI
+    // screens, but keep all drawing math in CSS pixels via the transform.
+    var dpr = window.devicePixelRatio || 1;
+    canvasWidth = $(mapContainer).width();
+    canvasHeight = $(mapContainer).height();
+    $(mapCanvas).attr("width", Math.round(canvasWidth * dpr));
+    $(mapCanvas).attr("height", Math.round(canvasHeight * dpr));
+    drawingContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvasCenterY = canvasHeight/2;
+    canvasCenterX = canvasWidth/2;
 }
 
 // http://stackoverflow.com/questions/2142535/how-to-clear-the-canvas-for-redrawing
