@@ -146,6 +146,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Register the service worker for offline support (needs http(s), not file://)
 if ("serviceWorker" in navigator) {
+  // When an updated service worker takes over a page it didn't serve,
+  // reload once so the page matches the new version (this also rescues
+  // devices stuck on a stale page from the first service worker)
+  if (navigator.serviceWorker.controller) {
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
+      reloaded = true;
+      window.location.reload();
+    });
+  }
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch((err) => {
       console.warn("Service worker registration failed:", err);
