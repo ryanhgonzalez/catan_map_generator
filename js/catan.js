@@ -534,6 +534,111 @@ function updateBalanceDisplay() {
     el.hidden = false;
 }
 
+// ----- Share dialog -----
+
+/**
+ * The share button opens a dialog with a QR code of the board's link (so a
+ * phone at the table can scan it off a laptop), the link itself, Copy
+ * link, and Share… where the browser supports the Web Share API.
+ */
+function setUpShareDialog() {
+    const dialog = document.getElementById("share-dialog");
+    const urlInput = document.getElementById("share-url");
+    const copyButton = document.getElementById("share-copy");
+    const nativeButton = document.getElementById("share-native");
+
+    $("#share-catan-board").click(() => {
+        const encoded = encodeBoardShort();
+        if (!encoded) return;
+
+        const url = new URL(window.location);
+        url.searchParams.set("board", encoded);
+        const shareUrl = url.toString();
+
+        renderQrCode(document.getElementById("share-qr"), shareUrl);
+        urlInput.value = shareUrl;
+        copyButton.textContent = "Copy link";
+        nativeButton.hidden = !navigator.share;
+        dialog.showModal();
+    });
+
+    $("#share-close").click(() => dialog.close());
+
+    // Clicking the dimmed backdrop (the dialog element itself, outside its
+    // content) closes it too
+    dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+    });
+
+    // Select the whole link on focus so it's easy to copy by hand
+    urlInput.addEventListener("focus", () => urlInput.select());
+
+    $(copyButton).click(async () => {
+        try {
+            await navigator.clipboard.writeText(urlInput.value);
+            copyButton.textContent = "Copied!";
+        } catch (err) {
+            // Clipboard blocked: select the link so the user can copy it
+            urlInput.focus();
+            copyButton.textContent = "Link selected, copy it";
+        }
+    });
+
+    $(nativeButton).click(async () => {
+        try {
+            await navigator.share({
+                title: "Catan Board",
+                text: "Check out this Catan board!",
+                url: urlInput.value
+            });
+        } catch (err) {
+            // Cancelled or failed; the dialog stays open with the other options
+        }
+    });
+}
+
+/**
+ * Draw a QR code for text into container as an SVG: dark modules on white
+ * with the standard 4-module quiet zone, which scanners need regardless of
+ * the app's theme.
+ */
+function renderQrCode(container, text) {
+    const qr = qrcode(0, "M"); // 0 = smallest version that fits
+    qr.addData(text);
+    qr.make();
+
+    const count = qr.getModuleCount();
+    const quietZone = 4;
+    const extent = count + 2 * quietZone;
+    let path = "";
+    for (let row = 0; row < count; row += 1) {
+        for (let col = 0; col < count; col += 1) {
+            if (qr.isDark(row, col)) {
+                path += `M${col + quietZone} ${row + quietZone}h1v1h-1z`;
+            }
+        }
+    }
+
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", `0 0 ${extent} ${extent}`);
+    svg.setAttribute("shape-rendering", "crispEdges");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "QR code for this board's link");
+
+    const background = document.createElementNS(ns, "rect");
+    background.setAttribute("width", extent);
+    background.setAttribute("height", extent);
+    background.setAttribute("fill", "#ffffff");
+
+    const modules = document.createElementNS(ns, "path");
+    modules.setAttribute("d", path);
+    modules.setAttribute("fill", "#000000");
+
+    svg.append(background, modules);
+    container.replaceChildren(svg);
+}
+
 // ----- FUNCTIONS -----
 
 window.onresize = function(event) {
@@ -592,43 +697,7 @@ function init() {
             });
         });
 
-        const shareButton = document.getElementById("share-catan-board");
-		shareButton.addEventListener("click", async () => {
-			const encoded = encodeBoardShort();
-			if (!encoded) {
-				alert("Generate a board first before sharing.");
-				return;
-			}
-
-			// Build shareable URL
-			const url = new URL(window.location);
-			url.searchParams.set("board", encoded);
-			const shareUrl = url.toString();
-
-			// If Web Share API is supported (Mobile Safari/Chrome)
-			if (navigator.share) {
-				try {
-					await navigator.share({
-						title: "Catan Board",
-						text: "Check out this Catan board!",
-						url: shareUrl
-					});
-					return;
-				} catch (err) {
-					// fall through to clipboard
-					console.warn("Share canceled or failed; falling back.", err);
-				}
-			}
-
-			// Fallback for desktop browsers
-			try {
-				await navigator.clipboard.writeText(shareUrl);
-				alert("Share URL copied to clipboard!");
-			} catch (err) {
-				prompt("Copy this share link:", shareUrl);
-			}
-		});
-
+        setUpShareDialog();
 
         enableButtons();
 
