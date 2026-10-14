@@ -1243,9 +1243,16 @@ CatanMap.prototype.drawHarbors = function() {
 		drawingContext.lineTo(midX + nx * depth - ex * outerHalf, midY + ny * depth - ey * outerHalf);
 		drawingContext.closePath();
 		
-		// 3:1 is plain white; 2:1 shows the resource's art
+		// 3:1 is open water (a port for any resource); 2:1 shows the
+		// resource's art
 		if (harbor.type === "any") {
-			drawingContext.fillStyle = "#FFFFFF";
+			// Lighter water at the shore, deeper out to sea
+			var water = drawingContext.createLinearGradient(
+				midX, midY, midX + nx * depth, midY + ny * depth
+			);
+			water.addColorStop(0, "#3b8fd0");
+			water.addColorStop(1, "#1d5f99");
+			drawingContext.fillStyle = water;
 			drawingContext.fill();
 		} else {
 			var img = resourceTypeToImageCanvas[harbor.type];
@@ -1272,15 +1279,11 @@ CatanMap.prototype.drawHarbors = function() {
 		drawingContext.textBaseline = "middle";
 		var label = harbor.type === "any" ? "3:1" : "2:1";
 		var textY = centerY + Math.round(0.06 * fontSizePx);
-		if (harbor.type === "any") {
-			drawingContext.fillStyle = "#0b1120";
-		} else {
-			// White with a dark outline to stay legible over the artwork
-			drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
-			drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
-			drawingContext.strokeText(label, centerX, textY);
-			drawingContext.fillStyle = "#FFFFFF";
-		}
+		// White with a dark outline, legible over water and artwork alike
+		drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
+		drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
+		drawingContext.strokeText(label, centerX, textY);
+		drawingContext.fillStyle = "#FFFFFF";
 		drawingContext.fillText(label, centerX, textY);
 
 		drawingContext.restore();
