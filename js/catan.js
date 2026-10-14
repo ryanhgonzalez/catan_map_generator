@@ -106,6 +106,11 @@ normalMap.coordinatesArray = [
 	[2,3],[2,1],[2,-1],[2,-3],
 	[4,2],[4,0],[4,-2]
 ];
+// 4 generic 3:1 harbors plus one 2:1 harbor per resource
+normalMap.harborTypes = [
+	"any", "any", "any", "any",
+	"wood", "clay", "wool", "grain", "ore"
+];
 
 var expandedMap = new MapDefinition();
 expandedMap.resourceDict = {
@@ -137,6 +142,24 @@ expandedMap.coordinatesArray = [
 	[4,3],[4,1],[4,-1],[4,-3],
 	[6,2],[6,0],[6,-2]
 ];
+// The 5-6 player extension adds one 3:1 harbor and a second 2:1 wool harbor
+expandedMap.harborTypes = [
+	"any", "any", "any", "any", "any",
+	"wood", "clay", "wool", "wool", "grain", "ore"
+];
+
+// ----- Harbor geometry -----
+
+// Neighbor offsets in grid coordinates, clockwise from the top edge. A
+// harbor sits on the edge of a coastal tile facing one of these directions.
+var HEX_DIRECTIONS = [[0,-2],[2,-1],[2,1],[0,2],[-2,1],[-2,-1]];
+
+// In units of the hex size: how far a harbor badge sits beyond the coast,
+// and its radius
+var HARBOR_OFFSET = 0.5;
+var HARBOR_RADIUS = 0.28;
+
+var showHarbors = true;
 
 // ----- Catan Board History Traversal -----
 
@@ -174,7 +197,12 @@ function encodeBoardShort() {
         return `${tile.gridX},${tile.gridY},${res},${num}`;
     });
 
-    const compact = tiles.join(".");
+    // Harbor types in coastline order, one digit each (0 = 3:1 harbor)
+    const harbors = catanMap.harbors
+        .map(h => h.type === "any" ? 0 : RESOURCE_TO_CODE[h.type])
+        .join("");
+
+    const compact = tiles.join(".") + (harbors ? "|" + harbors : "");
     return btoa(compact);
 }
 
@@ -228,7 +256,10 @@ function decodeBoardShort(b64) {
         return null;
     }
 
-    const tiles = decoded.split(".").map(part => {
+    // Links shared before harbors existed have no "|" section
+    const [tilePart, harborPart] = decoded.split("|");
+
+    const tiles = tilePart.split(".").map(part => {
         const [gx, gy, rc, num] = part.split(",").map(v => parseInt(v));
         return {
             gridX: gx,
@@ -238,26 +269,63 @@ function decodeBoardShort(b64) {
         };
     });
 
-    return tiles;
+    const harborTypes = harborPart
+        ? harborPart.split("").map(c => c === "0" ? "any" : CODE_TO_RESOURCE[c])
+        : [];
+
+    return { tiles: tiles, harborTypes: harborTypes };
 }
 
 
 /**
- * Load a decoded state (array of tile objects) into the map and render it.
+ * Load a decoded shared board ({tiles, harborTypes}), render it and make
+ * it the start of the history.
  */
-function loadBoardFromDecodedState(stateTiles) {
-    if (!Array.isArray(stateTiles)) return;
+function loadBoardFromDecodedState(state) {
+    if (!state || !Array.isArray(state.tiles)) return;
 
-	  // Determine map type based on tile count
-    if (stateTiles.length === normalMap.coordinatesArray.length) {
+    showBoardState(state);
+    boardHistory = [state];
+    currentBoardIndex = 0;
+    enableButtons();
+}
+
+/**
+ * Capture the board on screen as plain data for history and sharing.
+ */
+function snapshotBoard() {
+    return {
+        tiles: catanMap.hexTiles.map(tile => ({
+            resourceType: tile.resourceType,
+            number: tile.number,
+            gridX: tile.gridX,
+            gridY: tile.gridY
+        })),
+        harborTypes: catanMap.harbors.map(h => h.type)
+    };
+}
+
+/**
+ * Put a board state ({tiles, harborTypes}) on screen and in the URL.
+ */
+function showBoardState(state) {
+    // Determine map type based on tile count, and match the game type switch
+    // (setting .checked doesn't fire "change", so this won't regenerate)
+    let gameType = null;
+    if (state.tiles.length === normalMap.coordinatesArray.length) {
         catanMap.defineMap(normalMap);
-    } else if (stateTiles.length === expandedMap.coordinatesArray.length) {
+        gameType = "normal";
+    } else if (state.tiles.length === expandedMap.coordinatesArray.length) {
         catanMap.defineMap(expandedMap);
+        gameType = "expanded";
     } else {
         console.warn("Unknown map size; cannot set map definition correctly.");
     }
+    if (gameType) {
+        $(`input[name=game-type][value=${gameType}]`)[0].checked = true;
+    }
 
-    catanMap.hexTiles = stateTiles.map(t => {
+    catanMap.hexTiles = state.tiles.map(t => {
         const tile = new HexTile();
         tile.setCoordinate(t.gridX, t.gridY);
         tile.setResourceType(t.resourceType);
@@ -270,20 +338,25 @@ function loadBoardFromDecodedState(stateTiles) {
         catanMap.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
     });
 
-    // Render
+    catanMap.setHarborTypes(state.harborTypes);
+
     sizeCanvas();
     catanMap.resize();
     catanMap.draw();
+    updateShareUrl();
+}
 
-    // Put into history so back/forward still work
-    boardHistory = [catanMap.hexTiles.map(tile => ({
-        resourceType: tile.resourceType,
-        number: tile.number,
-        gridX: tile.gridX,
-        gridY: tile.gridY
-    }))];
-    currentBoardIndex = 0;
-    enableButtons();
+/**
+ * Keep ?board= in the address bar in sync so the URL always shares the
+ * board on screen.
+ */
+function updateShareUrl() {
+    const encoded = encodeBoardShort();
+    if (encoded) {
+        const url = new URL(window.location);
+        url.searchParams.set('board', encoded);
+        window.history.replaceState({}, '', url);
+    }
 }
 
 // ----- FUNCTIONS -----
@@ -303,13 +376,27 @@ function init() {
         const genButton = $('button#gen-map-button')[0];
         $(genButton).click(generate);
         genButton.disabled = false;
-        genButton.innerHTML = "Generate";
 
         const goBackButton = $('button#gen-map-back-button')[0];
         $(goBackButton).click(goBack);
 
         const goForwardButton = $('button#gen-map-forward-button')[0];
         $(goForwardButton).click(goForward);
+
+        // Switching game type rolls a board of the new type straight away
+        document.querySelectorAll('input[name=game-type]').forEach(input => {
+            input.addEventListener("change", generate);
+        });
+
+        // Hiding harbors also gives the tiles the room the harbors used
+        const harborsToggle = document.getElementById("show-harbors");
+        // The browser may restore the checkbox state on reload
+        showHarbors = harborsToggle.checked;
+        harborsToggle.addEventListener("change", () => {
+            showHarbors = harborsToggle.checked;
+            catanMap.resize();
+            catanMap.draw();
+        });
 
         const shareButton = document.getElementById("share-catan-board");
 		shareButton.addEventListener("click", async () => {
@@ -422,24 +509,6 @@ function loadImages(callback) {
 }
 
 function generate() {
-    const currentBoardState = catanMap.hexTiles?.map(tile => ({
-        resourceType: tile.resourceType,
-        number: tile.number,
-        gridX: tile.gridX,
-        gridY: tile.gridY
-    })) || null;
-
-    // If we are not at the end of the history, truncate it
-    if (currentBoardIndex < boardHistory.length - 1) {
-        boardHistory = boardHistory.slice(0, currentBoardIndex + 1);
-    }
-
-    // Add the current board to the history
-    if (currentBoardState) {
-        boardHistory.push(currentBoardState);
-    }
-    currentBoardIndex = boardHistory.length - 1;
-
     // Generate a new board
     var mapDef;
     switch ($("input[name=game-type]:checked").val()) {
@@ -454,14 +523,13 @@ function generate() {
     catanMap.generate();
     catanMap.resize();
     catanMap.draw();
+    updateShareUrl();
 
-    // Update URL so this exact board can be shared
-    const encoded = encodeBoardShort();
-    if (encoded) {
-        const url = new URL(window.location);
-        url.searchParams.set('board', encoded);
-        window.history.replaceState({}, '', url);
-    }
+    // History holds every board shown, with currentBoardIndex on the one on
+    // screen. Generating after going back drops the boards that were ahead.
+    boardHistory = boardHistory.slice(0, currentBoardIndex + 1);
+    boardHistory.push(snapshotBoard());
+    currentBoardIndex = boardHistory.length - 1;
 
     enableButtons();
 }
@@ -492,38 +560,22 @@ function loadBoardFromHistory(index) {
     const boardState = boardHistory[index];
     if (!boardState) return;
 
-    catanMap.hexTiles = boardState.map(tileState => {
-        const tile = new HexTile();
-        tile.setCoordinate(tileState.gridX, tileState.gridY);
-        tile.setResourceType(tileState.resourceType);
-        if (tileState.number) {
-            tile.setNumber(tileState.number);
-        }
-        return tile;
-    });
-
-    catanMap.coordToTile = {};
-    catanMap.hexTiles.forEach(tile => {
-        catanMap.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
-    });
-
-    catanMap.draw();
-
-    // Also update URL to reflect the current history board
-    const encoded = encodeBoardShort();
-    if (encoded) {
-        const url = new URL(window.location);
-        url.searchParams.set('board', encoded);
-        window.history.replaceState({}, '', url);
-    }
+    // Boards in history can be a different size than the one on screen,
+    // so this re-defines the map and resizes rather than only redrawing
+    showBoardState(boardState);
 }
 
 function enableButtons() {
+    const genButton = $('button#gen-map-button')[0];
     const goBackButton = $('button#gen-map-back-button')[0];
     const goForwardButton = $('button#gen-map-forward-button')[0];
+    const shareButton = $('button#share-catan-board')[0];
+    const hasBoard = !!catanMap.hexTiles;
 
+    genButton.textContent = hasBoard ? "New board" : "Generate board";
     goBackButton.disabled = currentBoardIndex <= 0;
     goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
+    shareButton.disabled = !hasBoard;
 }
 
 function MapDefinition() {
@@ -553,7 +605,8 @@ function CatanMap() {
 	this.hexTiles = null;
 	this.coordToTile = {};
 	this.coordSpan = [0,0];
-	
+	this.harbors = [];
+
 }
 CatanMap.prototype.defineMap = function(mapDefinition) {
 	
@@ -590,7 +643,10 @@ CatanMap.prototype.generate = function() {
 	if (this.mapDefinition) {
 		
 		this.hexTiles = [];
-		
+		// Clear the previous board's tiles so the 6/8 neighbor check only
+		// sees tiles placed on this board
+		this.coordToTile = {};
+
 		var numTiles = this.mapDefinition.coordinatesArray.length;
 		
 		var tileCoordinates = this.mapDefinition.coordinatesArray.copy();
@@ -671,11 +727,72 @@ CatanMap.prototype.generate = function() {
 			this.hexTiles.push(newHexTile);
 			this.coordToTile[newCoords.toString()] = newHexTile;
 		}
-		
+
+		// Shuffle harbor types onto the fixed coastline slots
+		var harborTypes = this.mapDefinition.harborTypes.copy();
+		var shuffled = [];
+		while (harborTypes.length) {
+			shuffled.push(harborTypes.random(true));
+		}
+		this.setHarborTypes(shuffled);
+
 	} else {
 		console.log("No map definition.");
 	}
-	
+
+}
+/**
+ * Harbor positions for the current map: coastal edges (tile edges with no
+ * neighbor) sorted around the board, then spread evenly. With 30 coastal
+ * edges and 9 harbors this gives the classic 3-3-4 spacing.
+ */
+CatanMap.prototype.getHarborSlots = function() {
+	var def = this.mapDefinition;
+	if (!def || !def.harborTypes) return [];
+
+	var occupied = {};
+	def.coordinatesArray.forEach(function(c) {
+		occupied[c.toString()] = true;
+	});
+
+	var coastEdges = [];
+	def.coordinatesArray.forEach(function(c) {
+		HEX_DIRECTIONS.forEach(function(d, dir) {
+			if (occupied[[c[0] + d[0], c[1] + d[1]].toString()]) return;
+			// Edge midpoint relative to the board center, in hex-size units
+			var mx = (c[0] + d[0] / 2) * 0.75;
+			var my = (c[1] + d[1] / 2) * Math.sin(Math.PI/3);
+			coastEdges.push({
+				gridX: c[0],
+				gridY: c[1],
+				dir: dir,
+				angle: Math.atan2(my, mx)
+			});
+		});
+	});
+	coastEdges.sort(function(a, b) { return a.angle - b.angle; });
+
+	var count = def.harborTypes.length;
+	var slots = [];
+	for (var i = 0; i < count; i += 1) {
+		var edge = coastEdges[Math.floor(i * coastEdges.length / count)];
+		slots.push({ gridX: edge.gridX, gridY: edge.gridY, dir: edge.dir });
+	}
+	return slots;
+}
+/**
+ * Assign harbor types (in slot order) to this map's harbor slots. Boards
+ * from old share links have no harbor types and get no harbors.
+ */
+CatanMap.prototype.setHarborTypes = function(types) {
+	var slots = this.getHarborSlots();
+	if (!types || types.length !== slots.length) {
+		this.harbors = [];
+		return;
+	}
+	this.harbors = slots.map(function(slot, i) {
+		return { gridX: slot.gridX, gridY: slot.gridY, dir: slot.dir, type: types[i] };
+	});
 }
 CatanMap.prototype.draw = function() {
 
@@ -684,17 +801,116 @@ CatanMap.prototype.draw = function() {
 		for (var i = 0; i < this.hexTiles.length; i += 1) {
 			this.hexTiles[i].draw();
 		}
+		if (showHarbors) {
+			this.drawHarbors();
+		}
 	}
-	
+
+}
+CatanMap.prototype.drawHarbors = function() {
+	for (var i = 0; i < this.harbors.length; i += 1) {
+		var harbor = this.harbors[i];
+		var tile = this.coordToTile[[harbor.gridX, harbor.gridY].toString()];
+		if (!tile) continue;
+
+		// Keep line cap/join changes from leaking into the tile drawing
+		drawingContext.save();
+
+		// Half the vector to the missing neighbor reaches the edge midpoint
+		var d = HEX_DIRECTIONS[harbor.dir];
+		var vx = dx * d[0] / 2;
+		var vy = dy * d[1] / 2;
+		var len = Math.sqrt(vx * vx + vy * vy);
+		var nx = vx / len;
+		var ny = vy / len;
+		var midX = tile.xCenter + vx;
+		var midY = tile.yCenter + vy;
+
+		var badgeX = midX + nx * HARBOR_OFFSET * size;
+		var badgeY = midY + ny * HARBOR_OFFSET * size;
+		var radius = HARBOR_RADIUS * size;
+
+		// Piers to the edge's two corners, the settlement spots that trade
+		// here. Dark under gold so they read on light and dark backgrounds.
+		var corners = [
+			[midX - ny * size / 2, midY + nx * size / 2],
+			[midX + ny * size / 2, midY - nx * size / 2]
+		];
+		drawingContext.lineCap = "round";
+		[["rgba(11,17,32,0.55)", 2.4], ["#FAEB96", 1.2]].forEach(function(pass) {
+			drawingContext.strokeStyle = pass[0];
+			drawingContext.lineWidth = pass[1] * lineWidth;
+			drawingContext.beginPath();
+			corners.forEach(function(corner) {
+				drawingContext.moveTo(badgeX, badgeY);
+				drawingContext.lineTo(corner[0], corner[1]);
+			});
+			drawingContext.stroke();
+		});
+
+		// Badge: 3:1 is a plain white token; 2:1 shows the resource's art
+		drawingContext.beginPath();
+		drawingContext.arc(badgeX, badgeY, radius, 0, 2 * Math.PI, false);
+		if (harbor.type === "any") {
+			drawingContext.fillStyle = "#FFFFFF";
+			drawingContext.fill();
+		} else {
+			var img = resourceTypeToImageCanvas[harbor.type];
+			drawingContext.save();
+			drawingContext.clip();
+			// Center crop skips the tile scan's cream border
+			drawingContext.drawImage(
+				img,
+				img.width * 0.2, img.height * 0.2, img.width * 0.6, img.height * 0.6,
+				badgeX - radius, badgeY - radius, 2 * radius, 2 * radius
+			);
+			drawingContext.restore();
+		}
+		drawingContext.strokeStyle = "#000000";
+		drawingContext.lineWidth = lineWidth;
+		drawingContext.stroke();
+
+		var fontSizePx = Math.round(0.22 * size);
+		drawingContext.font = "bold " + fontSizePx + "px sans-serif";
+		drawingContext.textAlign = "center";
+		drawingContext.textBaseline = "middle";
+		var label = harbor.type === "any" ? "3:1" : "2:1";
+		var textY = badgeY + Math.round(0.06 * fontSizePx);
+		if (harbor.type === "any") {
+			drawingContext.fillStyle = "#000000";
+		} else {
+			// White with a dark outline to stay legible over the artwork
+			drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
+			drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
+			drawingContext.lineJoin = "round";
+			drawingContext.strokeText(label, badgeX, textY);
+			drawingContext.fillStyle = "#FFFFFF";
+		}
+		drawingContext.fillText(label, badgeX, textY);
+
+		drawingContext.restore();
+	}
 }
 CatanMap.prototype.resize = function() {
 /* Size = Height / ( (coordSpacing + 2) * Math.sin(Math.PI/3) )
  * Size = Width / ( (coordSpacing * (1 + Math.cos(Math.PI/3)) / 2) + 2 )
 */
+	// Harbor badges stick out past the tiles; leave room for them. A badge
+	// reaches (apothem + offset + radius) out from its tile's center, along
+	// the edge normal: straight up/down, or 30 degrees off horizontal.
+	var marginX = 0;
+	var marginY = 0;
+	if (showHarbors && this.harbors.length) {
+		var apothem = Math.sin(Math.PI/3);
+		var reach = apothem + HARBOR_OFFSET + HARBOR_RADIUS;
+		marginX = Math.max(0, reach * Math.cos(Math.PI/6) - 1);
+		marginY = reach - apothem;
+	}
+
 	var wSize = (canvasWidth-10) /
-        ( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 );
+        ( (this.coordSpan[0] * (1 + Math.cos(Math.PI/3)) / 2) + 2 + 2 * marginX );
     var hSize = (canvasHeight-10) /
-        ( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) );
+        ( (this.coordSpan[1] + 2) * Math.sin(Math.PI/3) + 2 * marginY );
     size = Math.floor(Math.min(wSize, hSize));
     dx = size * (1 + Math.cos(Math.PI/3)) / 2;
     dy = size * Math.sin(Math.PI/3);

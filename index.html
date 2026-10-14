@@ -21,104 +21,78 @@
         <h1 class="app-title">Catan Board Generator</h1>
         <p class="app-subtitle">Generate balanced classic and expanded Catan maps.</p>
       </div>
-      <button
-        id="theme-toggle"
-        class="btn btn-secondary btn-icon"
-        type="button"
-        aria-label="Switch to light theme"
-      >
-        <!-- Sun: shown in dark theme -->
-        <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-        </svg>
-        <!-- Moon: shown in light theme -->
-        <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-        </svg>
-      </button>
+      <div class="header-actions">
+        <button
+          id="share-catan-board"
+          class="btn btn-secondary btn-icon"
+          type="button"
+          aria-label="Share this board"
+          disabled
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+            <path d="M16 6l-4-4-4 4" />
+            <path d="M12 2v13" />
+          </svg>
+        </button>
+        <button
+          id="theme-toggle"
+          class="btn btn-secondary btn-icon"
+          type="button"
+          aria-label="Switch to light theme"
+        >
+          <!-- Sun: shown in dark theme -->
+          <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+          </svg>
+          <!-- Moon: shown in light theme -->
+          <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
   <main class="app-main">
     <section class="control-panel" aria-label="Board controls">
       <div class="card">
-        <h2 class="card-title">Game type</h2>
-        <div class="field-group">
-          <label class="radio-row">
-            <input
-              type="radio"
-              name="game-type"
-              value="normal"
-              checked
-            />
-            <span>Standard (3–4 players)</span>
-          </label>
-          <label class="radio-row">
-            <input
-              type="radio"
-              name="game-type"
-              value="expanded"
-            />
-            <span>Expanded (5–6 players)</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Board actions</h2>
-        <div class="button-row">
-          <button id="gen-map-button" class="btn btn-primary" disabled>
-            Loading…
-          </button>
-        </div>
-        <div class="button-row history-row">
-          <button
-            id="gen-map-back-button"
-            class="btn btn-secondary"
-            type="button"
-            disabled
-          >
-            ◀ Previous
-          </button>
-          <button
-            id="gen-map-forward-button"
-            class="btn btn-secondary"
-            type="button"
-            disabled
-          >
-            Next ▶
-          </button>
-        </div>
-        <div class="button-row">
-          <button
-            id="share-catan-board"
-            class="btn btn-ghost"
-            type="button"
-          >
-            Share current board
-          </button>
-        </div>
-        <p class="helper-text">
-          Use Generate to roll a new balanced layout, then navigate history
-          with Previous and Next. The share button copies a URL that encodes
-          the current board state. 
-        </p>
+        <fieldset class="field-group">
+          <legend class="card-title">Game type</legend>
+          <div class="segmented">
+            <label class="segment">
+              <input type="radio" name="game-type" value="normal" checked />
+              <span>Standard<small>3–4 players</small></span>
+            </label>
+            <label class="segment">
+              <input type="radio" name="game-type" value="expanded" />
+              <span>Expanded<small>5–6 players</small></span>
+            </label>
+          </div>
+        </fieldset>
+        <label class="switch-row">
+          <span>Show harbors</span>
+          <input type="checkbox" id="show-harbors" class="switch" checked />
+        </label>
       </div>
 
       <div class="card card-meta">
         <h2 class="card-title">About</h2>
         <p class="small-text">
-          Boards respect Catan tile and number distributions for both standard
-          and expanded maps, and try to avoid clustering highly productive
-          numbers like 6 and 8. 
+          Boards respect Catan tile, number and harbor distributions for both
+          standard and expanded maps, and try to avoid clustering highly
+          productive numbers like 6 and 8. Use the arrows to step through
+          boards you've generated, and the share button to send a link to
+          the board on screen.
         </p>
       </div>
     </section>
 
-    <section class="board-panel" aria-label="Catan board preview">
+    <section class="board-panel" aria-label="Catan board">
       <div id="map-container" class="map-container">
         <!-- Canvas is injected by catan.js via addCanvas() -->
         <div class="map-loading-state" id="map-loading-state">
@@ -126,14 +100,38 @@
           <p>Preparing your board…</p>
         </div>
       </div>
+
+      <div class="board-toolbar">
+        <button
+          id="gen-map-back-button"
+          class="btn btn-secondary btn-icon btn-icon-lg"
+          type="button"
+          aria-label="Previous board"
+          disabled
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <button id="gen-map-button" class="btn btn-primary btn-generate" type="button" disabled>
+          Loading…
+        </button>
+        <button
+          id="gen-map-forward-button"
+          class="btn btn-secondary btn-icon btn-icon-lg"
+          type="button"
+          aria-label="Next board"
+          disabled
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
     </section>
   </main>
-
-  <footer class="app-footer">
-    <p class="small-text">
-      Tip: Rotate your device to landscape for a larger board view.
-    </p>
-  </footer>
 
 </body>
 </html>

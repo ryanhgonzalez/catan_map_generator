@@ -11,7 +11,6 @@
   --card-tint: rgba(249, 115, 22, 0.12);
   --card-shadow: 0 14px 30px rgba(15, 23, 42, 0.45);
   --accent: #f97316;
-  --accent-soft: rgba(249, 115, 22, 0.12);
   --accent-strong: #fb923c;
   --border-subtle: rgba(148, 163, 184, 0.35);
   --spinner-track: rgba(148, 163, 184, 0.3);
@@ -24,8 +23,9 @@
   --btn-secondary-bg: rgba(15, 23, 42, 0.9);
   --btn-secondary-bg-hover: rgba(15, 23, 42, 1);
   --btn-secondary-border: rgba(148, 163, 184, 0.6);
-  --btn-ghost-border: rgba(148, 163, 184, 0.4);
-  --btn-ghost-text: #fb923c;
+  --segment-track: rgba(148, 163, 184, 0.12);
+  --segment-selected: #1e293b;
+  --switch-off: rgba(148, 163, 184, 0.45);
   --radius-lg: 18px;
   --radius-md: 12px;
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.6);
@@ -41,7 +41,6 @@
   --card-tint: rgba(249, 115, 22, 0.08);
   --card-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   --accent: #ea580c;
-  --accent-soft: rgba(234, 88, 12, 0.1);
   --accent-strong: #fb923c;
   --border-subtle: rgba(100, 116, 139, 0.3);
   --spinner-track: rgba(100, 116, 139, 0.3);
@@ -54,8 +53,9 @@
   --btn-secondary-bg: #ffffff;
   --btn-secondary-bg-hover: #f8fafc;
   --btn-secondary-border: rgba(100, 116, 139, 0.5);
-  --btn-ghost-border: rgba(100, 116, 139, 0.4);
-  --btn-ghost-text: #c2410c;
+  --segment-track: rgba(100, 116, 139, 0.12);
+  --segment-selected: #ffffff;
+  --switch-off: rgba(100, 116, 139, 0.45);
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.12);
 }
 
@@ -144,18 +144,21 @@ body {
   gap: 0.75rem;
 }
 
-/* Board column */
+/* Board column: the board with its toolbar underneath */
 
 .board-panel {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .map-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   border-radius: var(--radius-lg);
   background: var(--bg-board);
   box-shadow: var(--shadow-soft);
@@ -167,6 +170,16 @@ canvas#map-canvas {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Previous / Generate / Next, right under the board */
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 420px;
+  align-self: center;
 }
 
 /* Loading state overlay */
@@ -221,6 +234,7 @@ canvas#map-canvas {
 
 .card-title {
   margin: 0 0 0.55rem;
+  padding: 0;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -228,27 +242,10 @@ canvas#map-canvas {
 }
 
 .field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.radio-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-.radio-row input[type="radio"] {
-  accent-color: var(--accent);
-}
-
-.helper-text {
-  margin: 0.75rem 0 0;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
 .small-text {
@@ -257,16 +254,122 @@ canvas#map-canvas {
   color: var(--text-muted);
 }
 
-/* --- Buttons --- */
+/* Segmented control: radios styled as one two-option switch. The input
+   stays in place (transparent) so keyboard and screen readers work. */
 
-.button-row {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--segment-track);
 }
 
-.history-row {
+.segment {
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.segment input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segment span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: background-color var(--transition-fast),
+    border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.segment small {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.segment input:checked + span {
+  background: var(--segment-selected);
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+
+.segment input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* On/off switch row */
+
+.switch-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switch {
+  appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--switch-off);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition-fast);
+}
+
+.switch:checked {
+  background: var(--accent);
+}
+
+.switch:checked::before {
+  transform: translateX(18px);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Buttons --- */
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .btn {
@@ -280,6 +383,9 @@ canvas#map-canvas {
     border-color var(--transition-fast), transform var(--transition-fast),
     box-shadow var(--transition-fast), color var(--transition-fast);
   white-space: nowrap;
+  /* Round buttons have their own hover/active styles; skip the square
+     mobile tap flash */
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary {
@@ -306,18 +412,13 @@ canvas#map-canvas {
   border-color: var(--accent);
 }
 
-.btn-ghost {
-  background: transparent;
-  border-color: var(--btn-ghost-border);
-  color: var(--btn-ghost-text);
+.btn-generate {
+  flex: 1;
+  height: 48px;
+  font-size: 1rem;
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--accent-strong);
-}
-
-/* Round icon-only button (theme toggle), 44px touch target */
+/* Round icon-only button, 44px touch target */
 .btn-icon {
   flex-shrink: 0;
   width: 44px;
@@ -326,6 +427,11 @@ canvas#map-canvas {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.btn-icon-lg {
+  width: 48px;
+  height: 48px;
 }
 
 /* Show the icon for the theme the button switches to */
@@ -344,17 +450,14 @@ canvas#map-canvas {
   box-shadow: none;
 }
 
-/* --- Footer --- */
-
-.app-footer {
-  padding: 0 1.25rem 0.75rem;
-  text-align: center;
-}
-
 /* --- Responsive behavior --- */
 
 /* Phones and small screens */
 @media (max-width: 768px) {
+  .app-title {
+    font-size: 1.1rem;
+  }
+
   .app-main {
     flex-direction: column;
     padding-bottom: 0.5rem;
@@ -365,17 +468,21 @@ canvas#map-canvas {
     order: 2;
   }
 
-  /* Square board sized to the screen width; don't let the controls
-     below shrink it */
+  /* Board and toolbar first; don't let the controls below shrink them */
   .board-panel {
     order: 1;
     flex-shrink: 0;
+  }
+
+  /* Square board sized to the screen width */
+  .map-container {
+    flex: none;
     aspect-ratio: 1 / 1;
-    max-height: 75vh;
+    max-height: 70vh;
   }
 }
 
-/* Tablets and up */
+/* Tablets and up: the panel height covers the board and its toolbar */
 @media (min-width: 769px) {
   .board-panel {
     height: 70vh;
