@@ -162,6 +162,133 @@ var HARBOR_OUTER_HALF_WIDTH = 0.28;
 
 var showHarbors = true;
 
+// ----- Balance rules -----
+
+// Which placement rules the generator enforces; the switches in the
+// controls card change these and they're saved per device
+var balanceRules = {
+	separate68: true,         // no 6 or 8 touching another 6 or 8
+	separate212: false,       // no 2 or 12 touching another 2 or 12
+	separateResources: false, // no two tiles of the same resource touching
+	desertCenter: false       // desert(s) in the middle of the board
+};
+
+// Hexes used by "Desert in the center": the middle hex of the standard
+// board, and the two middle hexes of the 5-6 player board
+normalMap.centerCoords = [[0,0]];
+expandedMap.centerCoords = [[0,1],[0,-1]];
+
+// Cap on placement attempts per solve, so impossible rule combinations
+// give up quickly instead of hanging
+var MAX_SOLVER_STEPS = 5000;
+var SOLVER_TRIES = 5;
+
+var BALANCE_RULES_STORAGE_KEY = "balanceRules";
+
+function loadBalanceRules() {
+	try {
+		return JSON.parse(localStorage.getItem(BALANCE_RULES_STORAGE_KEY)) || {};
+	} catch (err) {
+		return {};
+	}
+}
+
+function saveBalanceRules() {
+	try {
+		localStorage.setItem(BALANCE_RULES_STORAGE_KEY, JSON.stringify(balanceRules));
+	} catch (err) {
+		// Storage unavailable (e.g. private mode); rules last this visit only
+	}
+}
+
+function isHot(number) {
+	return number === 6 || number === 8;
+}
+
+function isRare(number) {
+	return number === 2 || number === 12;
+}
+
+// Fisher-Yates shuffle into a new array
+function shuffle(arr) {
+	var out = arr.slice();
+	for (var i = out.length - 1; i > 0; i -= 1) {
+		var j = Math.floor(Math.random() * (i + 1));
+		var tmp = out[i];
+		out[i] = out[j];
+		out[j] = tmp;
+	}
+	return out;
+}
+
+/**
+ * Randomly assign values from a pool to hexes so that no two touching hexes
+ * clash, backtracking out of dead ends. Returns {hexKey: value}.
+ *
+ * keys:      hex keys to fill, in board order (neighbors close together
+ *            makes dead ends show up early)
+ * pool:      [[value, count], ...], counts summing to keys.length
+ * clashes:   function(a, b) -> true if a and b can't touch; null for none
+ * neighbors: {hexKey: [neighborKey, ...]}
+ * ruleName:  for the warning if the rules can't be met
+ *
+ * If the rules can't be met within the step cap, they're dropped for this
+ * board rather than hanging.
+ */
+function solveAssignment(keys, pool, clashes, neighbors, ruleName) {
+	for (var attempt = 0; attempt < SOLVER_TRIES; attempt += 1) {
+		var result = trySolve(keys, pool, clashes, neighbors);
+		if (result) return result;
+	}
+	console.warn("Couldn't satisfy " + ruleName + " on this board; ignoring it.");
+	return trySolve(keys, pool, null, neighbors);
+}
+
+function trySolve(keys, pool, clashes, neighbors) {
+	var assignment = {};
+	var remaining = pool.map(function(entry) { return entry[1]; });
+	var steps = 0;
+
+	// Pool indices in random order, weighted by how many of each are left,
+	// so rare values aren't tried first more often than they'd come up
+	function valueOrder() {
+		var copies = [];
+		remaining.forEach(function(count, idx) {
+			for (var n = 0; n < count; n += 1) copies.push(idx);
+		});
+		var seen = {};
+		return shuffle(copies).filter(function(idx) {
+			if (seen[idx]) return false;
+			seen[idx] = true;
+			return true;
+		});
+	}
+
+	function place(i) {
+		if (i === keys.length) return true;
+		if (++steps > MAX_SOLVER_STEPS) return false;
+
+		var key = keys[i];
+		var order = valueOrder();
+		for (var o = 0; o < order.length; o += 1) {
+			var value = pool[order[o]][0];
+			var blocked = clashes && neighbors[key].some(function(n) {
+				return n in assignment && clashes(value, assignment[n]);
+			});
+			if (blocked) continue;
+
+			assignment[key] = value;
+			remaining[order[o]] -= 1;
+			if (place(i + 1)) return true;
+			delete assignment[key];
+			remaining[order[o]] += 1;
+		}
+		return false;
+	}
+
+	return place(0) ? assignment : null;
+}
+
 // ----- Catan Board History Traversal -----
 
 var boardHistory = [];
@@ -397,6 +524,18 @@ function init() {
             showHarbors = harborsToggle.checked;
             catanMap.resize();
             catanMap.draw();
+        });
+
+        // Balance rules: restore the saved choices, and roll a new board
+        // whenever one changes so its effect shows straight away
+        Object.assign(balanceRules, loadBalanceRules());
+        document.querySelectorAll('input[data-rule]').forEach(input => {
+            input.checked = !!balanceRules[input.dataset.rule];
+            input.addEventListener("change", () => {
+                balanceRules[input.dataset.rule] = input.checked;
+                saveBalanceRules();
+                generate();
+            });
         });
 
         const shareButton = document.getElementById("share-catan-board");
@@ -641,106 +780,83 @@ CatanMap.prototype.defineMap = function(mapDefinition) {
 }
 CatanMap.prototype.generate = function() {
 	
-	if (this.mapDefinition) {
-		
-		this.hexTiles = [];
-		// Clear the previous board's tiles so the 6/8 neighbor check only
-		// sees tiles placed on this board
-		this.coordToTile = {};
-
-		var numTiles = this.mapDefinition.coordinatesArray.length;
-		
-		var tileCoordinates = this.mapDefinition.coordinatesArray.copy();
-		
-		var tileNumbers = [];
-		for (var key in this.mapDefinition.numberDict) {
-			for (var i = 0; i < this.mapDefinition.numberDict[key]; i += 1) {
-				tileNumbers.push(parseInt(key));
-			}
-		}
-		
-		var tileTypes = [];
-		for (var key in this.mapDefinition.resourceDict) {
-			if (key != "desert") {
-				for (var i = 0; i < this.mapDefinition.resourceDict[key]; i += 1) {
-					tileTypes.push(key);
-				}
-			}
-		}
-		
-		var newCoords = null;
-		var numDeserts = this.mapDefinition.resourceDict["desert"];
-		
-		for (var i = 0; i < numDeserts; i += 1) {
-			var desertHexTile = new HexTile();
-			newCoords = tileCoordinates.random(true);
-			desertHexTile.setCoordinate.apply(
-				desertHexTile,
-				newCoords
-			);
-			desertHexTile.setResourceType("desert");
-			this.hexTiles.push(desertHexTile);
-			this.coordToTile[newCoords.toString()] = desertHexTile;
-		}
-		
-		// Move all highly productive tile number (6 and 8) to the front
-		// of the tileNumbers array
-		var highlyProductiveIdx = [];
-		highlyProductiveIdx = highlyProductiveIdx.concat(
-			tileNumbers.indexOfArray(6),
-			tileNumbers.indexOfArray(8)
-		);
-		for (var i = 0; i < highlyProductiveIdx.length; i += 1) {
-			tileNumbers.swap(i,highlyProductiveIdx[i]);
-		}
-		
-		// Handle all other tiles
-		for (var i = 0; i < (numTiles - numDeserts); i += 1) {
-			
-			var newHexTile = new HexTile();
-			newHexTile.setNumber(tileNumbers[i]);
-			newHexTile.setResourceType(tileTypes.random(true));
-
-			var invalid;
-			
-			if ( newHexTile.isHighlyProductive() ) {
-				var tmpCoords = [];
-				do {
-					newCoords = tileCoordinates.random(true);
-					newHexTile.setCoordinate.apply(
-						newHexTile,
-						newCoords
-					);
-					invalid = this.hasHighlyProductiveNeighbors(newHexTile);
-					if (invalid) {
-						tmpCoords.push(newCoords);
-					}
-				} while ( invalid );
-				tileCoordinates = tileCoordinates.concat(tmpCoords);
-			} else {
-				newCoords = tileCoordinates.random(true);
-				newHexTile.setCoordinate.apply(
-					newHexTile,
-					newCoords
-				);
-			}
-			
-			this.hexTiles.push(newHexTile);
-			this.coordToTile[newCoords.toString()] = newHexTile;
-		}
-
-		// Shuffle harbor types onto the fixed coastline slots
-		var harborTypes = this.mapDefinition.harborTypes.copy();
-		var shuffled = [];
-		while (harborTypes.length) {
-			shuffled.push(harborTypes.random(true));
-		}
-		this.setHarborTypes(shuffled);
-
-	} else {
+	if (!this.mapDefinition) {
 		console.log("No map definition.");
+		return;
 	}
-
+	
+	var def = this.mapDefinition;
+	var keys = def.coordinatesArray.map(function(c) { return c.toString(); });
+	var neighbors = this.getNeighborKeys();
+	var numDeserts = def.resourceDict["desert"];
+	
+	// 1. Deserts: the center hex(es), or anywhere
+	var desertKeys = (balanceRules.desertCenter && def.centerCoords)
+		? def.centerCoords.map(function(c) { return c.toString(); })
+		: shuffle(keys).slice(0, numDeserts);
+	var landKeys = keys.filter(function(key) {
+		return desertKeys.indexOf(key) === -1;
+	});
+	
+	// 2. Resources on the remaining hexes
+	var resourcePool = [];
+	for (var type in def.resourceDict) {
+		if (type != "desert") resourcePool.push([type, def.resourceDict[type]]);
+	}
+	var sameResource = balanceRules.separateResources
+		? function(a, b) { return a === b; }
+		: null;
+	var resources = solveAssignment(landKeys, resourcePool, sameResource, neighbors, "same resources apart");
+	
+	// 3. Numbers on every hex but the deserts
+	var numberPool = [];
+	for (var number in def.numberDict) {
+		numberPool.push([parseInt(number), def.numberDict[number]]);
+	}
+	var numbersClash = (balanceRules.separate68 || balanceRules.separate212)
+		? function(a, b) {
+			return (balanceRules.separate68 && isHot(a) && isHot(b)) ||
+				(balanceRules.separate212 && isRare(a) && isRare(b));
+		}
+		: null;
+	var numbers = solveAssignment(landKeys, numberPool, numbersClash, neighbors, "number rules");
+	
+	this.hexTiles = [];
+	this.coordToTile = {};
+	for (var i = 0; i < def.coordinatesArray.length; i += 1) {
+		var coord = def.coordinatesArray[i];
+		var key = keys[i];
+		var tile = new HexTile();
+		tile.setCoordinate(coord[0], coord[1]);
+		if (desertKeys.indexOf(key) !== -1) {
+			tile.setResourceType("desert");
+		} else {
+			tile.setResourceType(resources[key]);
+			tile.setNumber(numbers[key]);
+		}
+		this.hexTiles.push(tile);
+		this.coordToTile[key] = tile;
+	}
+	
+	// Shuffle harbor types onto the fixed coastline slots
+	this.setHarborTypes(shuffle(def.harborTypes));
+	
+}
+/**
+ * For each hex on the current map, the keys of the hexes touching it.
+ */
+CatanMap.prototype.getNeighborKeys = function() {
+	var coords = this.mapDefinition.coordinatesArray;
+	var onBoard = {};
+	coords.forEach(function(c) { onBoard[c.toString()] = true; });
+	
+	var neighbors = {};
+	coords.forEach(function(c) {
+		neighbors[c.toString()] = HEX_DIRECTIONS
+			.map(function(d) { return [c[0] + d[0], c[1] + d[1]].toString(); })
+			.filter(function(key) { return onBoard[key]; });
+	});
+	return neighbors;
 }
 /**
  * Harbor positions for the current map: coastal edges (tile edges with no
@@ -916,39 +1032,6 @@ CatanMap.prototype.resize = function() {
     dy = size * Math.sin(Math.PI/3);
     lineWidth = Math.max(1, Math.min(3, size / 30));
 }
-CatanMap.prototype.getAdjacentTiles = function(tile) {
-	
-	var tileX = tile.gridX;
-	var tileY = tile.gridY;
-	
-	var adjTiles = [];
-	
-	// (+0,+2), (+2,+1), (+2,-1), (+0,-2), (-2,-1), (-2,1)
-	xshift = [0, 2, 2, 0, -2, -2];
-	yshift = [2, 1, -1, -2, -1, 1];
-	
-	for (var i = 0; i < 6; i += 1) {
-		var adjTile = this.coordToTile[
-			[tileX + xshift[i], tileY + yshift[i]].toString()
-		];
-		// Will be null if no hex tile found at that coordinate
-		if (adjTile) {
-			adjTiles.push(adjTile);
-		}
-	}
-	
-	return adjTiles;
-	
-}
-CatanMap.prototype.hasHighlyProductiveNeighbors = function(tile) {
-	var adjacentTiles = this.getAdjacentTiles(tile);
-	for (var i = 0; i < adjacentTiles.length; i += 1) {
-		if ( adjacentTiles[i].isHighlyProductive() ) {
-			return true;
-		}
-	}
-	return false;
-}
 
 function HexTile() {
 	this.gridX;
@@ -1085,26 +1168,6 @@ Array.prototype.random = function(removeElem) {
 }
 Array.prototype.copy = function() {
 	return this.slice();
-}
-Array.prototype.indexOfArray = function(val) {
-	var arr = [];
-	var sIdx = 0;
-	var tmpCopy = this.copy();
-	do {
-		var rIdx = tmpCopy.indexOf(val);
-		var valid = (rIdx >= 0);
-		if (valid) {
-			tmpCopy.splice(0, rIdx + 1);
-			arr.push(sIdx + rIdx);
-			sIdx += rIdx + 1;
-		}
-	} while (valid);
-	return arr;
-}
-Array.prototype.swap = function(idx1, idx2) {
-	var tmp = this[idx1];
-	this[idx1] = this[idx2];
-	this[idx2] = tmp;
 }
 
 function addCanvas() {

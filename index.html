@@ -80,12 +80,34 @@
         </label>
       </div>
 
+      <div class="card">
+        <fieldset class="field-group">
+          <legend class="card-title">Balance rules</legend>
+          <label class="switch-row">
+            <span>Keep 6 &amp; 8 apart</span>
+            <input type="checkbox" id="rule-separate-68" class="switch" data-rule="separate68" checked />
+          </label>
+          <label class="switch-row">
+            <span>Keep 2 &amp; 12 apart</span>
+            <input type="checkbox" id="rule-separate-212" class="switch" data-rule="separate212" />
+          </label>
+          <label class="switch-row">
+            <span>Keep same resources apart</span>
+            <input type="checkbox" id="rule-separate-resources" class="switch" data-rule="separateResources" />
+          </label>
+          <label class="switch-row">
+            <span>Desert in the center</span>
+            <input type="checkbox" id="rule-desert-center" class="switch" data-rule="desertCenter" />
+          </label>
+        </fieldset>
+      </div>
+
       <div class="card card-meta">
         <h2 class="card-title">About</h2>
         <p class="small-text">
           Boards respect Catan tile, number and harbor distributions for both
-          standard and expanded maps, and try to avoid clustering highly
-          productive numbers like 6 and 8. Use the arrows to step through
+          standard and expanded maps, and follow the balance rules you pick
+          above. Use the arrows to step through
           boards you've generated, and the share button to send a link to
           the board on screen.
         </p>
