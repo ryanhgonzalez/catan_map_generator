@@ -5,7 +5,11 @@
 :root {
   color-scheme: dark;
   --bg-page: radial-gradient(circle at top, #1f2937 0, #020617 45%, #000 100%);
-  --bg-board: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+  --sea: radial-gradient(ellipse at 50% 45%, #1e5a8a 0, #154670 40%, #0c2c4c 75%, #081f38 100%);
+  --sea-border: rgba(125, 211, 252, 0.22);
+  --sea-shadow: 0 0 0 1px rgba(2, 6, 23, 0.6), 0 18px 44px rgba(8, 47, 73, 0.55);
+  --pill-bg: rgba(2, 6, 23, 0.72);
+  --pill-border: rgba(148, 163, 184, 0.25);
   --bg-elevated: #0b1120;
   --bg-elevated-soft: #020617;
   --accent: #f97316;
@@ -40,7 +44,11 @@
 :root[data-theme="light"] {
   color-scheme: light;
   --bg-page: radial-gradient(circle at top, #ffffff 0, #f1f5f9 45%, #e2e8f0 100%);
-  --bg-board: radial-gradient(circle at top, #f8fafc 0, #e2e8f0 60%, #cbd5e1 100%);
+  --sea: radial-gradient(ellipse at 50% 45%, #d6ecfb 0, #b9ddf6 45%, #94c6ec 100%);
+  --sea-border: rgba(14, 116, 144, 0.25);
+  --sea-shadow: 0 18px 40px rgba(14, 116, 144, 0.18);
+  --pill-bg: rgba(255, 255, 255, 0.85);
+  --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
   --bg-elevated-soft: #f8fafc;
   --accent: #ea580c;
@@ -109,7 +117,7 @@ body {
 
 .app-header {
   /* Clear the status bar / notch when installed full-screen (viewport-fit) */
-  padding: max(0.9rem, env(safe-area-inset-top)) 1.25rem 0.4rem;
+  padding: max(0.9rem, env(safe-area-inset-top)) 1.25rem 0.6rem;
 }
 
 .app-header-inner {
@@ -121,18 +129,44 @@ body {
   gap: 1rem;
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.app-logo {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* "CATAN" large over "BOARD GENERATOR" small */
 .app-title {
   margin: 0;
-  font-size: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app-title-main {
+  font-size: 1.32rem;
+  font-weight: 800;
+  line-height: 1.1;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-strong);
 }
 
-.app-subtitle {
-  margin: 0.25rem 0 0;
+.app-title-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  font-size: 0.9rem;
 }
 
 /* Fills the space between the header and the nav, with the board centered
@@ -154,40 +188,55 @@ body {
   gap: 0.75rem;
 }
 
-/* On wider screens the board takes the height left after the header,
-   balance line and nav row */
+/* The board card: a sea for the board to sit in, with the balance pill at
+   its bottom. On wider screens it takes the height left after the header
+   and nav row. */
 .map-container {
   position: relative;
   width: 100%;
-  height: clamp(420px, calc(100dvh - 240px), 820px);
-  border-radius: var(--radius-lg);
-  background: var(--bg-board);
-  box-shadow: var(--shadow-soft);
+  height: clamp(420px, calc(100dvh - 200px), 820px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sea-border);
+  border-radius: 24px;
+  background: var(--sea);
+  box-shadow: var(--sea-shadow);
   overflow: hidden;
 }
 
-/* Canvas must fill container */
+/* Canvas fills the card above the pill; catan.js sizes the drawing to the
+   canvas's own box */
 canvas#map-canvas {
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
-  height: 100%;
   display: block;
 }
 
-/* Fairness score line between the board and the toolbar */
+/* Fairness score pill at the bottom of the board card */
 .board-balance {
-  margin: 0;
+  align-self: center;
+  max-width: calc(100% - 24px);
+  margin: 0 0 14px;
+  padding: 0.4rem 0.9rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: baseline;
   gap: 0.2rem 0.5rem;
-  font-size: 0.9rem;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: var(--pill-bg);
+  font-size: 0.85rem;
   color: var(--text-muted);
   text-align: center;
 }
 
+/* Keep its space before the first board so the canvas doesn't change size
+   (and need redrawing) when the score appears */
 .board-balance[hidden] {
-  display: none;
+  display: flex;
+  visibility: hidden;
 }
 
 .balance-score {
@@ -278,7 +327,7 @@ canvas#map-canvas {
   gap: 0.75rem;
   color: var(--text-muted);
   font-size: 0.9rem;
-  background: var(--bg-board);
+  background: var(--sea);
   z-index: 1;
 }
 
@@ -500,6 +549,28 @@ canvas#map-canvas {
   justify-content: center;
   gap: 0.5rem;
   font-size: 1rem;
+}
+
+/* Share and Settings in the header: separate round tinted buttons */
+.btn-header {
+  border: 1px solid var(--border-subtle);
+  background: var(--segment-track);
+  color: var(--text-primary);
+}
+
+.btn-header:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+/* Visually hidden, still read by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* Round icon-only button, 44px touch target */
@@ -935,15 +1006,20 @@ canvas#map-canvas {
 
 /* Phones and small screens */
 @media (max-width: 768px) {
-  .app-title {
-    font-size: 1.1rem;
+  .app-header {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
-  /* Square board sized to the screen width */
+  .app-main {
+    padding: 0 0.75rem 0.9rem;
+  }
+
+  /* A tall sea card: up to 520px, less on shorter phones so the header and
+     nav bar still fit */
   .map-container {
-    height: auto;
-    aspect-ratio: 1 / 1;
-    max-height: 70vh;
+    height: min(520px, calc(100dvh - 240px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    min-height: 340px;
   }
 
   /* Bottom nav bar, like a native app's tab bar. Sticky keeps it on

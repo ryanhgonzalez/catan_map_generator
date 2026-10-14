@@ -641,10 +641,20 @@ function renderQrCode(container, text) {
 
 // ----- FUNCTIONS -----
 
-window.onresize = function(event) {
-	sizeCanvas();
-	catanMap.resize();
-	catanMap.draw();
+/**
+ * Redraw whenever the canvas's box changes size: window resizes and
+ * rotation, but also the balance pill under it growing (it's empty before
+ * the first board, and a long reason can wrap to two lines).
+ */
+function watchCanvasSize() {
+	new ResizeObserver(function() {
+		if (mapCanvas.clientWidth === canvasWidth && mapCanvas.clientHeight === canvasHeight) return;
+		sizeCanvas();
+		if (catanMap.hexTiles) {
+			catanMap.resize();
+			catanMap.draw();
+		}
+	}).observe(mapCanvas);
 }
 
 function init() {
@@ -1447,20 +1457,26 @@ function addCanvas() {
 	drawingContext = mapCanvas.getContext('2d');
 	mapCanvas.id = "map-canvas";
 	
-	sizeCanvas();
+	// Inside the board card, above the balance pill
+	document.getElementById("map-container").insertBefore(
+		mapCanvas,
+		document.getElementById("board-balance")
+	);
 	
-	document.getElementById("map-container").appendChild(mapCanvas);
+	sizeCanvas();
+	watchCanvasSize();
 	
 }
 
 function sizeCanvas() {
-    var mapContainer = $("div#map-container")[0];
     if (!mapCanvas) return;
     // Back the canvas with device pixels so it stays sharp on high-DPI
     // screens, but keep all drawing math in CSS pixels via the transform.
+    // The canvas's own box is measured, not the card's: the balance pill
+    // takes the bottom of the card.
     var dpr = window.devicePixelRatio || 1;
-    canvasWidth = $(mapContainer).width();
-    canvasHeight = $(mapContainer).height();
+    canvasWidth = mapCanvas.clientWidth;
+    canvasHeight = mapCanvas.clientHeight;
     $(mapCanvas).attr("width", Math.round(canvasWidth * dpr));
     $(mapCanvas).attr("height", Math.round(canvasHeight * dpr));
     drawingContext.setTransform(dpr, 0, 0, dpr, 0, 0);

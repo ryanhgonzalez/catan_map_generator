@@ -19,14 +19,18 @@
 <body>
   <header class="app-header">
     <div class="app-header-inner">
-      <div>
-        <h1 class="app-title">Catan Board Generator</h1>
-        <p class="app-subtitle">Generate balanced classic and expanded Catan maps.</p>
+      <div class="app-brand">
+        <img class="app-logo" src="icons/icon-192.png" alt="" width="42" height="42" />
+        <!-- The space between the spans keeps the accessible name "Catan Board Generator" -->
+        <h1 class="app-title">
+          <span class="app-title-main">Catan</span>
+          <span class="app-title-sub">Board Generator</span>
+        </h1>
       </div>
       <div class="header-actions">
         <button
           id="share-catan-board"
-          class="btn btn-secondary btn-icon"
+          class="btn btn-icon btn-header"
           type="button"
           aria-label="Share this board"
           disabled
@@ -40,7 +44,7 @@
         </button>
         <button
           id="settings-button"
-          class="btn btn-secondary btn-icon"
+          class="btn btn-icon btn-header"
           type="button"
           aria-label="Settings"
           aria-haspopup="dialog"
@@ -63,14 +67,15 @@
           <div class="spinner"></div>
           <p>Preparing your board…</p>
         </div>
-      </div>
 
-      <p id="board-balance" class="board-balance" aria-live="polite" hidden>
-        Balance
-        <strong class="balance-score"></strong>
-        <span class="balance-label"></span>
-        <span class="balance-reason"></span>
-      </p>
+        <!-- Inside the card, under the canvas -->
+        <p id="board-balance" class="board-balance" aria-live="polite" hidden>
+          <span class="sr-only">Balance</span>
+          <strong class="balance-score"></strong>
+          <span class="balance-label"></span>
+          <span class="balance-reason"></span>
+        </p>
+      </div>
     </section>
   </main>
 
