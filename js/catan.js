@@ -521,13 +521,15 @@ function showBoardState(state, dropIn) {
 
 // ----- First board drop-in -----
 // A board shown on an empty card (opening the app, a shared link, or after
-// Clear all boards) is dealt onto it: the tiles drop from above in a ripple
-// out from the middle and land with a little bump, each number token pops
-// on once its tile has landed, the harbors fade in, then the score pill.
+// Clear all boards) falls into place: each tile, with its number token, and
+// each harbor drops straight down from the sky above its own spot, in a
+// random order, its shadow on the card darkening as it nears, and lands with
+// a little bump. Then the score pill fades in.
 
-// How long one tile takes to fall and land, and a token to pop on, in ms
-var TILE_DROP_MS = 420;
-var TOKEN_POP_MS = 260;
+// How long one piece takes to fall and land, and the spread of start times,
+// in ms
+var PIECE_DROP_MS = 480;
+var DROP_SPREAD_MS = 650;
 // requestAnimationFrame id while a drop-in is running
 var dropFrame = null;
 
@@ -539,22 +541,27 @@ function stopDropIn() {
     document.getElementById("board-balance").style.opacity = "";
 }
 
-// A falling tile at progress p (0..1): it starts bigger (nearer) and a
-// little above its spot, speeds up as it falls, then gives a small bump as
-// it lands. Scale, y offset in tile sizes, and opacity.
-function tileDropLook(p) {
-    const fall = 0.7;
+// A falling piece at progress p (0..1). Height shows as size: it starts
+// 1.8 times as big (high above, nearer the eye), shrinks faster and faster as
+// it falls, then gives a small bump as it lands. Scale, opacity, and how
+// close it is to the card (0..1, for its shadow).
+function pieceDropLook(p) {
+    const fall = 0.78;
     if (p < fall) {
-        const left = 1 - (p / fall) * (p / fall);
-        return { s: 1 + 0.45 * left, y: -0.35 * left, alpha: Math.min(1, 2.5 * p / fall) };
+        const near = (p / fall) * (p / fall);
+        return { s: 1.8 - 0.8 * near, alpha: Math.min(1, 5 * p / fall), near: near };
     }
-    return { s: 1 - 0.06 * Math.sin(Math.PI * (p - fall) / (1 - fall)), y: 0, alpha: 1 };
+    return { s: 1 - 0.05 * Math.sin(Math.PI * (p - fall) / (1 - fall)), alpha: 1, near: 1 };
 }
 
-// Ease out past the end and back, for the tokens popping on
-function backOut(p) {
-    const c = 1.7;
-    return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2);
+// Trace a hexagon of the board's tile size around a point
+function hexPath(x, y) {
+    drawingContext.beginPath();
+    for (let i = 0; i < 6; i += 1) {
+        const angle = Math.PI / 6 + i * Math.PI / 3;
+        drawingContext.lineTo(x + size * Math.sin(angle), y - size * Math.cos(angle));
+    }
+    drawingContext.closePath();
 }
 
 /**
@@ -564,51 +571,68 @@ function backOut(p) {
 function dropInBoard() {
     stopDropIn();
     const map = catanMap;
-    const tiles = map.hexTiles;
     const pill = document.getElementById("board-balance");
     pill.style.transition = "none";
     pill.style.opacity = "0";
 
-    // Ripple out from the middle, a little uneven so it looks hand-dealt
-    const reach = tiles.map((tile) => Math.hypot(dx * tile.gridX, dy * tile.gridY));
-    const farthest = Math.max(1, ...reach);
-    const tileStart = reach.map((r) => 380 * r / farthest + 70 * Math.random());
-    const tokenStart = tileStart.map((t) => t + TILE_DROP_MS + 40);
-    const landed = Math.max(...tileStart) + TILE_DROP_MS;
-    const end = Math.max(...tokenStart) + TOKEN_POP_MS;
-
-    // Draw something about a point (scale and nudge), at an opacity
-    const around = (x, y, s, nudgeY, alpha, draw) => {
-        drawingContext.save();
-        drawingContext.globalAlpha = alpha;
-        drawingContext.translate(x, y + nudgeY);
-        drawingContext.scale(s, s);
-        drawingContext.translate(-x, -y);
-        draw();
-        drawingContext.restore();
-    };
+    // Every piece, with when it starts falling; harbors come a bit later,
+    // around the tiles
+    const pieces = map.hexTiles.map((tile) => ({ tile: tile, start: DROP_SPREAD_MS * 0.8 * Math.random() }));
+    if (showHarbors) {
+        map.harbors.forEach((harbor) => {
+            pieces.push({ harbor: harbor, start: DROP_SPREAD_MS * (0.35 + 0.65 * Math.random()) });
+        });
+    }
+    const end = Math.max(...pieces.map((piece) => piece.start)) + PIECE_DROP_MS;
 
     const start = performance.now();
     const frame = (now) => {
         const t = now - start;
         drawingContext.clear();
-        tiles.forEach((tile, i) => {
-            tile.xCenter = canvasCenterX + dx * tile.gridX;
-            tile.yCenter = canvasCenterY + dy * tile.gridY;
-            const p = (t - tileStart[i]) / TILE_DROP_MS;
-            if (p <= 0) return;
-            const look = tileDropLook(Math.min(1, p));
-            around(tile.xCenter, tile.yCenter, look.s, look.y * size, look.alpha, () => tile.drawBase());
+        // Where everything goes, at the canvas's current size
+        const placed = pieces.map((piece) => {
+            const p = Math.max(0, Math.min(1, (t - piece.start) / PIECE_DROP_MS));
+            if (piece.tile) {
+                const tile = piece.tile;
+                tile.xCenter = canvasCenterX + dx * tile.gridX;
+                tile.yCenter = canvasCenterY + dy * tile.gridY;
+                return { piece: piece, p: p, x: tile.xCenter, y: tile.yCenter };
+            }
+            const place = map.harborPlace(piece.harbor);
+            return place && { piece: piece, p: p, x: place.centerX, y: place.centerY, place: place };
+        }).filter((item) => item && item.p > 0);
+
+        // Landed pieces first, then the falling ones' shadows on the card,
+        // then the falling ones, highest (biggest) on top
+        const landed = placed.filter((item) => item.p >= 1);
+        const falling = placed.filter((item) => item.p < 1)
+            .map((item) => Object.assign(item, { look: pieceDropLook(item.p) }))
+            .sort((a, b) => b.look.s - a.look.s);
+        const drawPiece = (item) => {
+            if (item.piece.tile) {
+                item.piece.tile.drawBase();
+                if (item.piece.tile.number && showNumbers) item.piece.tile.drawNumber();
+            } else {
+                map.drawHarbor(item.piece.harbor, item.place);
+            }
+        };
+        landed.forEach(drawPiece);
+        falling.forEach((item) => {
+            if (!item.piece.tile) return;
+            drawingContext.fillStyle = `rgba(0, 0, 0, ${0.35 * item.look.near})`;
+            hexPath(item.x, item.y + 0.06 * size);
+            drawingContext.fill();
         });
-        const fade = Math.max(0, Math.min(1, (t - landed + 120) / 250));
-        if (showHarbors && fade > 0) around(0, 0, 1, 0, fade, () => map.drawHarbors());
-        if (showNumbers) {
-            tiles.forEach((tile, i) => {
-                const p = (t - tokenStart[i]) / TOKEN_POP_MS;
-                if (!tile.number || p <= 0) return;
-                around(tile.xCenter, tile.yCenter, backOut(Math.min(1, p)), 0, 1, () => tile.drawNumber());
-            });
-        }
+        falling.slice().reverse().forEach((item) => {
+            drawingContext.save();
+            drawingContext.globalAlpha = item.look.alpha;
+            drawingContext.translate(item.x, item.y);
+            drawingContext.scale(item.look.s, item.look.s);
+            drawingContext.translate(-item.x, -item.y);
+            drawPiece(item);
+            drawingContext.restore();
+        });
+
         if (t < end) {
             dropFrame = requestAnimationFrame(frame);
             return;
@@ -2227,86 +2251,102 @@ CatanMap.prototype.drawBestSpots = function() {
 }
 CatanMap.prototype.drawHarbors = function() {
 	for (var i = 0; i < this.harbors.length; i += 1) {
-		var harbor = this.harbors[i];
-		var tile = this.coordToTile[[harbor.gridX, harbor.gridY].toString()];
-		if (!tile) continue;
+		var place = this.harborPlace(this.harbors[i]);
+		if (place) this.drawHarbor(this.harbors[i], place);
+	}
+}
 
-		// Keep line join and stroke changes from leaking into the tile drawing
+/**
+ * Where a harbor's dock goes, off its tile's coastal edge: the edge
+ * midpoint, the outward normal (nx, ny) and the edge direction (ex, ey),
+ * its depth and outer half-width, and its center (for the art and label).
+ * null if its tile isn't on the board.
+ */
+CatanMap.prototype.harborPlace = function(harbor) {
+	var tile = this.coordToTile[[harbor.gridX, harbor.gridY].toString()];
+	if (!tile) return null;
+
+	// Half the vector to the missing neighbor reaches the edge midpoint
+	var d = HEX_DIRECTIONS[harbor.dir];
+	var vx = dx * d[0] / 2;
+	var vy = dy * d[1] / 2;
+	var len = Math.sqrt(vx * vx + vy * vy);
+	var nx = vx / len;
+	var ny = vy / len;
+	var midX = canvasCenterX + dx * tile.gridX + vx;
+	var midY = canvasCenterY + dy * tile.gridY + vy;
+	var depth = HARBOR_DEPTH * size;
+	return {
+		midX: midX, midY: midY, nx: nx, ny: ny, ex: -ny, ey: nx,
+		depth: depth,
+		outerHalf: HARBOR_OUTER_HALF_WIDTH * size,
+		centerX: midX + nx * depth / 2,
+		centerY: midY + ny * depth / 2
+	};
+}
+
+CatanMap.prototype.drawHarbor = function(harbor, place) {
+	var midX = place.midX, midY = place.midY;
+	var nx = place.nx, ny = place.ny, ex = place.ex, ey = place.ey;
+	var depth = place.depth, outerHalf = place.outerHalf;
+	var centerX = place.centerX, centerY = place.centerY;
+
+	// Keep line join and stroke changes from leaking into the tile drawing
+	drawingContext.save();
+
+	// Inner side = the coastal edge between its two corners; outer side
+	// is shorter, giving the wedge shape of the game's harbor pieces
+	drawingContext.beginPath();
+	drawingContext.moveTo(midX - ex * size / 2, midY - ey * size / 2);
+	drawingContext.lineTo(midX + ex * size / 2, midY + ey * size / 2);
+	drawingContext.lineTo(midX + nx * depth + ex * outerHalf, midY + ny * depth + ey * outerHalf);
+	drawingContext.lineTo(midX + nx * depth - ex * outerHalf, midY + ny * depth - ey * outerHalf);
+	drawingContext.closePath();
+	
+	// 3:1 is open water (a port for any resource); 2:1 shows the
+	// resource's art
+	if (harbor.type === "any") {
+		// Lighter water at the shore, deeper out to sea
+		var water = drawingContext.createLinearGradient(
+			midX, midY, midX + nx * depth, midY + ny * depth
+		);
+		water.addColorStop(0, "#3b8fd0");
+		water.addColorStop(1, "#1d5f99");
+		drawingContext.fillStyle = water;
+		drawingContext.fill();
+	} else {
+		var img = resourceTypeToImageCanvas[harbor.type];
+		var artHalf = 0.55 * size;
 		drawingContext.save();
-
-		// Half the vector to the missing neighbor reaches the edge midpoint
-		var d = HEX_DIRECTIONS[harbor.dir];
-		var vx = dx * d[0] / 2;
-		var vy = dy * d[1] / 2;
-		var len = Math.sqrt(vx * vx + vy * vy);
-		var nx = vx / len;
-		var ny = vy / len;
-		var midX = tile.xCenter + vx;
-		var midY = tile.yCenter + vy;
-
-		// Unit vector along the edge, and the dock's center (for the art and
-		// the label)
-		var ex = -ny;
-		var ey = nx;
-		var depth = HARBOR_DEPTH * size;
-		var outerHalf = HARBOR_OUTER_HALF_WIDTH * size;
-		var centerX = midX + nx * depth / 2;
-		var centerY = midY + ny * depth / 2;
-		
-		// Inner side = the coastal edge between its two corners; outer side
-		// is shorter, giving the wedge shape of the game's harbor pieces
-		drawingContext.beginPath();
-		drawingContext.moveTo(midX - ex * size / 2, midY - ey * size / 2);
-		drawingContext.lineTo(midX + ex * size / 2, midY + ey * size / 2);
-		drawingContext.lineTo(midX + nx * depth + ex * outerHalf, midY + ny * depth + ey * outerHalf);
-		drawingContext.lineTo(midX + nx * depth - ex * outerHalf, midY + ny * depth - ey * outerHalf);
-		drawingContext.closePath();
-		
-		// 3:1 is open water (a port for any resource); 2:1 shows the
-		// resource's art
-		if (harbor.type === "any") {
-			// Lighter water at the shore, deeper out to sea
-			var water = drawingContext.createLinearGradient(
-				midX, midY, midX + nx * depth, midY + ny * depth
-			);
-			water.addColorStop(0, "#3b8fd0");
-			water.addColorStop(1, "#1d5f99");
-			drawingContext.fillStyle = water;
-			drawingContext.fill();
-		} else {
-			var img = resourceTypeToImageCanvas[harbor.type];
-			var artHalf = 0.55 * size;
-			drawingContext.save();
-			drawingContext.clip();
-			// Center crop skips the tile scan's cream border
-			drawingContext.drawImage(
-				img,
-				img.width * 0.2, img.height * 0.2, img.width * 0.6, img.height * 0.6,
-				centerX - artHalf, centerY - artHalf, 2 * artHalf, 2 * artHalf
-			);
-			drawingContext.restore();
-		}
-		// Gold rim, matching the tile borders
-		drawingContext.strokeStyle = "#FAEB96";
-		drawingContext.lineWidth = 1.25 * lineWidth;
-		drawingContext.lineJoin = "round";
-		drawingContext.stroke();
-		
-		var fontSizePx = Math.round(0.23 * size);
-		drawingContext.font = "bold " + fontSizePx + "px sans-serif";
-		drawingContext.textAlign = "center";
-		drawingContext.textBaseline = "middle";
-		var label = harbor.type === "any" ? "3:1" : "2:1";
-		var textY = centerY + Math.round(0.06 * fontSizePx);
-		// White with a dark outline, legible over water and artwork alike
-		drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
-		drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
-		drawingContext.strokeText(label, centerX, textY);
-		drawingContext.fillStyle = "#FFFFFF";
-		drawingContext.fillText(label, centerX, textY);
-
+		drawingContext.clip();
+		// Center crop skips the tile scan's cream border
+		drawingContext.drawImage(
+			img,
+			img.width * 0.2, img.height * 0.2, img.width * 0.6, img.height * 0.6,
+			centerX - artHalf, centerY - artHalf, 2 * artHalf, 2 * artHalf
+		);
 		drawingContext.restore();
 	}
+	// Gold rim, matching the tile borders
+	drawingContext.strokeStyle = "#FAEB96";
+	drawingContext.lineWidth = 1.25 * lineWidth;
+	drawingContext.lineJoin = "round";
+	drawingContext.stroke();
+	
+	var fontSizePx = Math.round(0.23 * size);
+	drawingContext.font = "bold " + fontSizePx + "px sans-serif";
+	drawingContext.textAlign = "center";
+	drawingContext.textBaseline = "middle";
+	var label = harbor.type === "any" ? "3:1" : "2:1";
+	var textY = centerY + Math.round(0.06 * fontSizePx);
+	// White with a dark outline, legible over water and artwork alike
+	drawingContext.strokeStyle = "rgba(0,0,0,0.85)";
+	drawingContext.lineWidth = Math.max(2, fontSizePx / 4);
+	drawingContext.strokeText(label, centerX, textY);
+	drawingContext.fillStyle = "#FFFFFF";
+	drawingContext.fillText(label, centerX, textY);
+
+	drawingContext.restore();
 }
 CatanMap.prototype.resize = function() {
 /* Size = Height / ( (coordSpacing + 2) * Math.sin(Math.PI/3) )
