@@ -13,8 +13,6 @@
   --board-bg: radial-gradient(ellipse at 50% 40%, #1c2638 0, #131c2d 55%, #0c1322 100%);
   --board-border: rgba(148, 163, 184, 0.18);
   --board-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  /* Over the board card while it steps back behind the share card */
-  --card-shade: rgba(2, 6, 23, 0.5);
   --pill-bg: rgba(2, 6, 23, 0.72);
   --pill-border: rgba(148, 163, 184, 0.25);
   --bg-elevated: #0b1120;
@@ -58,7 +56,6 @@
   --board-bg: radial-gradient(ellipse at 50% 40%, #ffffff 0, #f8fafc 55%, #eef2f7 100%);
   --board-border: rgba(100, 116, 139, 0.2);
   --board-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-  --card-shade: rgba(15, 23, 42, 0.18);
   --pill-bg: rgba(255, 255, 255, 0.85);
   --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
@@ -199,10 +196,9 @@ body {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.75rem 1.25rem;
-  /* A flung board card flies past the edge, and the share card waits below
-     it, without making the page scroll (clip, unlike hidden, keeps the
-     sticky nav bar working) */
-  overflow: clip;
+  /* A flung board card flies past the edge without making the page scroll
+     sideways (clip, unlike hidden, keeps the sticky nav bar working) */
+  overflow-x: clip;
 }
 
 .board-panel {
@@ -976,15 +972,14 @@ body {
 }
 
 /* --- Share card --- */
-/* Rises from below the screen over the board card when it's swiped up
-   (catan.js). Open, it sits a little lower than the board card, whose top
-   edge peeks above it. */
+/* Under the board card in the stack, uncovered when the board card is
+   swiped up and thrown off the top of the screen (catan.js) */
 
 .share-card {
   position: absolute;
-  inset: 24px 0 0;
+  inset: 0;
   height: auto;
-  z-index: 2;
+  z-index: 0;
   padding: 32px 20px 20px;
   will-change: transform;
   display: flex;
@@ -1079,7 +1074,7 @@ body {
   z-index: 3;
 }
 
-/* Grab handle at the top of the share card: pull down to put it away */
+/* Grab handle at the top of the share card: pull down for the board */
 .card-handle {
   position: absolute;
   left: 50%;
@@ -1089,16 +1084,6 @@ body {
   margin-left: -20px;
   border-radius: 2px;
   background: var(--dot-past);
-}
-
-/* Dims the board card as it steps back behind the share card */
-.card-shade {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: var(--card-shade);
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* Board navigation is inert while the share card shows; the pager, mostly
@@ -1111,7 +1096,8 @@ body {
   opacity: 0;
 }
 
-/* While the share card is out, it's above the pager it overlaps */
+/* While the share card is out, the stack is above the header, so the
+   board card can be thrown up past it */
 .card-stack.is-lifted {
   z-index: 21;
 }
