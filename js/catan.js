@@ -1176,14 +1176,14 @@ async function flingCard(direction, move, fromPose, velocity) {
     // At least a firm push in the swipe direction (px/s), plus spin from
     // the throw
     const vx = direction * Math.max(Math.abs(v.x), 1.4) * 1000;
-    const vr = Math.max(-260, Math.min(260, vx * 0.06));
+    const vr = Math.max(-340, Math.min(340, vx * 0.08));
     let skipSettle = false;
     let current = null;
 
     const run = (async () => {
         current = runSpring({
             from: from,
-            to: { x: direction * width * 2.4, y: from.y + v.y * 140, r: from.r + direction * 28, s: 1 },
+            to: { x: direction * width * 2.4, y: from.y + v.y * 140, r: from.r + direction * 34, s: 1 },
             velocity: { x: vx, y: v.y * 400, r: vr },
             stiffness: 90,
             damping: 12,
@@ -1449,7 +1449,7 @@ function setUpBoardSwipe() {
         pose = {
             x: x,
             y: moveY * 0.3,
-            r: Math.max(-16, Math.min(16, x * 0.06 * tiltScale)),
+            r: Math.max(-20, Math.min(20, x * 0.09 * tiltScale)),
             s: 1
         };
         card.style.transform = poseTransform(pose);
