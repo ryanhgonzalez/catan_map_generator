@@ -1717,23 +1717,34 @@ HexTile.prototype.drawNumber = function() {
 	drawingContext.fill();
 	drawingContext.stroke();
 	
-	// Scale with the token (radius 0.375*size) so two digits still fit
-	var fontSizePx = Math.round(0.42 * size);
+	// Scale with the token (radius 0.375*size) so two digits still fit,
+	// leaving room for the dots underneath
+	var fontSizePx = Math.round(0.37 * size);
 
 	drawingContext.font = "bold " + fontSizePx + "px sans-serif";
 	drawingContext.textAlign = "center";
 	drawingContext.textBaseline = "middle";
-	if ( this.isHighlyProductive() ) {
-		drawingContext.fillStyle = "#FF0000";
-	} else {
-		drawingContext.fillStyle = "#000000";
-	}
+	drawingContext.fillStyle = this.isHighlyProductive() ? "#FF0000" : "#000000";
 	drawingContext.fillText(
 		this.number.toString(),
 		this.xCenter,
-		// Nudge down slightly: "middle" sits a touch high for digits
-		this.yCenter + Math.round(0.06 * fontSizePx)
+		// Above center to make room for the dots; "middle" sits a touch
+		// high for digits, hence the small nudge back down
+		this.yCenter - 0.07 * size + Math.round(0.06 * fontSizePx)
 	);
+
+	// Dots under the number, like the real tokens: one per way to roll it
+	// with two dice (5 for 6 and 8, down to 1 for 2 and 12)
+	var dots = pipsFor(this.number);
+	var dotRadius = Math.max(1, 0.032 * size);
+	var dotSpacing = 0.085 * size;
+	var dotsY = this.yCenter + 0.2 * size;
+	var firstX = this.xCenter - (dots - 1) * dotSpacing / 2;
+	for (var i = 0; i < dots; i += 1) {
+		drawingContext.beginPath();
+		drawingContext.arc(firstX + i * dotSpacing, dotsY, dotRadius, 0, 2 * Math.PI, false);
+		drawingContext.fill();
+	}
 	
 }
 
