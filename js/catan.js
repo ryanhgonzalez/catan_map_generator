@@ -632,7 +632,7 @@ async function openShareCard(fromPose, velocityY) {
             to: { x: 0, y: target, r: 0, s: 1 },
             velocity: { y: (velocityY || 0) * 1000 },
             stiffness: 260,
-            damping: 24,
+            damping: 29,
             onFrame: apply
         });
         activeMotion = spring;
@@ -664,7 +664,7 @@ async function closeShareCard(velocityY) {
             to: { y: 0 },
             velocity: { y: (velocityY || 0) * 1000 },
             stiffness: 300,
-            damping: 26,
+            damping: 31,
             onFrame: (pose) => {
                 card.style.transform = poseTransform(pose);
                 card.style.clipPath = clipTop(-parked * (pose.y / parked));
@@ -1152,7 +1152,7 @@ function hideBackCard() {
  * Fling the top card off toward `direction` (1 = right, -1 = left) and make
  * `move` current. fromPose is where a swipe left the card and velocity its
  * speed at release ({x, y} px/ms): the card carries on as thrown. Then the
- * top card takes over the next board and settles with a slight overshoot.
+ * top card takes over the next board and settles in.
  */
 async function flingCard(direction, move, fromPose, velocity) {
     const card = document.getElementById("map-container");
@@ -1197,7 +1197,7 @@ async function flingCard(direction, move, fromPose, velocity) {
         await current.done;
 
         // The top card now draws the board that was underneath, at the size
-        // the card underneath reached, then settles with a small pop. The
+        // the card underneath reached, then settles in gently. The
         // settle is only cosmetic, so input is free again from here.
         const fromScale = 0.94 + 0.06 * backProgress;
         move.change();
@@ -1211,9 +1211,9 @@ async function flingCard(direction, move, fromPose, velocity) {
         current = runSpring({
             from: { s: fromScale },
             to: { s: 1 },
-            velocity: { s: 0.5 },
+            velocity: { s: 0.15 },
             stiffness: 520,
-            damping: 24,
+            damping: 40,
             onFrame: (pose) => { card.style.transform = poseTransform(pose); }
         });
         await current.done;
@@ -1355,7 +1355,7 @@ function setUpBoardSwipe() {
             to: { x: 0, y: 0, r: 0, s: 1 },
             velocity: { x: vel.x * 1000, y: vel.y * 1000 },
             stiffness: 340,
-            damping: 22,
+            damping: 33,
             onFrame: (p) => {
                 card.style.transform = poseTransform(p);
                 if (!wasUp && back.classList.contains("is-visible")) {
