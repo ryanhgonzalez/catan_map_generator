@@ -242,6 +242,21 @@ body {
   touch-action: pan-y pinch-zoom;
 }
 
+/* Holding the card shouldn't select its text */
+.card-stack {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* The share card's link and buttons stay normal to use */
+.share-card,
+.share-card * {
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* The top card tilts around a point below it while swiped, like a card
    held at the bottom */
 .card-stack {
@@ -959,39 +974,48 @@ body {
   display: none;
 }
 
-/* --- Share dialog --- */
+/* --- Share card --- */
+/* Sits under the board card in the stack; revealed by holding the board
+   card and swiping it up (catan.js). The board card then parks its bottom
+   72px over the top of this card, hence the top padding. */
 
-.share-dialog {
-  width: min(360px, calc(100vw - 32px));
-  padding: 1rem 1.1rem 1.1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-soft);
-}
-
-.share-dialog::backdrop {
-  background: rgba(2, 6, 23, 0.65);
-  backdrop-filter: blur(2px);
-}
-
-.share-dialog-header {
+.share-card {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  z-index: 0;
+  padding: 84px 20px 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 12px;
+  text-align: center;
 }
 
-.share-dialog-header .card-title {
+.share-card[hidden] {
+  display: none;
+}
+
+.share-card:focus {
+  outline: none;
+}
+
+.share-card-title {
   margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-/* Always dark-on-white with its own quiet zone, so it scans in either theme */
+/* Always dark-on-white with its own quiet zone, so it scans in either
+   theme. Shrinks on short screens so the buttons still fit. */
 .share-qr {
-  width: 100%;
-  max-width: 260px;
-  margin: 0.75rem auto 0;
+  flex: 0 1 auto;
+  height: 206px;
+  min-height: 96px;
+  aspect-ratio: 1;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: #ffffff;
@@ -1000,17 +1024,19 @@ body {
 .share-qr svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
-.share-hint {
-  margin: 0.6rem 0 0.75rem;
-  text-align: center;
+.share-scan-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
 .share-url {
   width: 100%;
-  padding: 0.55rem 0.7rem;
+  flex-shrink: 0;
+  padding: 0.6rem 0.75rem;
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--bg-elevated-soft);
@@ -1026,18 +1052,134 @@ body {
 }
 
 .share-actions {
+  width: 100%;
+  flex-shrink: 0;
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 .share-actions .btn {
   flex: 1;
-  height: 44px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.95rem;
 }
 
 .share-actions .btn[hidden] {
   display: none;
+}
+
+/* Keyboard way back to the board: hidden until focused */
+.share-back {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.85rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.share-back:focus-visible {
+  opacity: 1;
+  z-index: 3;
+}
+
+/* Grab handle on the board card's parked strip */
+.card-handle {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 40px;
+  height: 4px;
+  margin-left: -20px;
+  border-radius: 2px;
+  background: var(--dot-past);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.share-open .card-handle {
+  opacity: 1;
+}
+
+/* Board navigation is inert while the share card shows */
+.share-open .board-nav,
+.share-open .board-pager {
+  opacity: 0.35;
+}
+
+/* Held (lifted) board card: bigger shadow, above the dimmed page */
+.card-stack.is-lifted {
+  z-index: 21;
+}
+
+#map-container.is-lifted {
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--board-border);
+}
+
+.lift-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(2, 6, 23, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+
+:root[data-theme="light"] .lift-dim {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.lift-dim.is-on {
+  opacity: 1;
+}
+
+/* Gesture hint pill over the pager's spot */
+.board-panel {
+  position: relative;
+}
+
+.card-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  z-index: 22;
+  margin: 0;
+  padding: 0.45rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  border: 1px solid var(--pill-border);
+  border-radius: 999px;
+  background: var(--pill-bg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  transform: translate(-50%, 4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.board-panel.show-hint .card-hint {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.board-panel.show-hint .board-pager {
+  visibility: hidden;
 }
 
 /* --- Dialog transitions --- */
@@ -1085,23 +1227,6 @@ body {
   animation: fade-out 220ms ease-in forwards;
 }
 
-/* The share card fades and scales up into place */
-.share-dialog[open] {
-  animation: pop-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.share-dialog[open]::backdrop {
-  animation: fade-in 220ms ease-out;
-}
-
-.share-dialog.is-closing {
-  animation: pop-out 160ms ease-in forwards;
-}
-
-.share-dialog.is-closing::backdrop {
-  animation: fade-out 160ms ease-in forwards;
-}
-
 @keyframes slide-in-up {
   from { transform: translateY(100%); }
 }
@@ -1132,9 +1257,7 @@ body {
   .settings-dialog,
   .settings-dialog::backdrop,
   .install-dialog,
-  .install-dialog::backdrop,
-  .share-dialog,
-  .share-dialog::backdrop {
+  .install-dialog::backdrop {
     animation: none !important;
   }
 }
@@ -1146,6 +1269,11 @@ body {
   .app-header {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  /* On phones sharing is hold-and-swipe-up on the board (or Settings) */
+  #share-catan-board {
+    display: none;
   }
 
   .app-main {

@@ -74,6 +74,29 @@
         </p>
       </div>
 
+      <!-- Share card: revealed by holding the board card and swiping it up;
+           the board card then parks its bottom edge above this -->
+      <section id="share-card" class="map-container share-card" aria-labelledby="share-card-title" tabindex="-1" hidden>
+        <button id="share-back" class="share-back" type="button">Back to board</button>
+        <h2 id="share-card-title" class="share-card-title">Share this board</h2>
+        <!-- QR code is drawn here by renderQrCode() -->
+        <div id="share-qr" class="share-qr"></div>
+        <p class="share-scan-hint">Scan with a phone camera to open this board.</p>
+        <input id="share-url" class="share-url" type="text" readonly aria-label="Board link" />
+        <div class="share-actions">
+          <button id="share-copy" class="btn btn-primary" type="button">Copy link</button>
+          <button id="share-native" class="btn btn-secondary" type="button" hidden>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+              <path d="M16 6l-4-4-4 4" />
+              <path d="M12 2v13" />
+            </svg>
+            Share…
+          </button>
+        </div>
+      </section>
+
       <div id="map-container" class="map-container">
         <!-- Canvas is injected by catan.js via addCanvas() -->
         <div class="map-loading-state" id="map-loading-state">
@@ -88,6 +111,7 @@
           <span class="balance-label"></span>
           <span class="balance-reason"></span>
         </p>
+        <span class="card-handle" aria-hidden="true"></span>
       </div>
       </div>
 
@@ -101,6 +125,16 @@
           <strong class="pager-index"></strong> of <span class="pager-total"></span>
         </span>
       </div>
+
+      <!-- Gesture hints ("Swipe up to share"), shown over the pager -->
+      <p id="card-hint" class="card-hint" aria-live="polite">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 19V5" />
+          <path d="M5 12l7-7 7 7" />
+        </svg>
+        <span class="card-hint-text"></span>
+      </p>
     </section>
   </main>
 
@@ -129,6 +163,9 @@
       <span class="nav-label">Next</span>
     </button>
   </nav>
+
+  <!-- Dims the page behind the board card while it's held -->
+  <div id="lift-dim" class="lift-dim" aria-hidden="true"></div>
 
   <!-- Settings: a full page on phones, a side panel on wider screens -->
   <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
@@ -242,6 +279,19 @@
       <p class="settings-note">Applies to the next board you generate.</p>
     </fieldset>
 
+    <section class="settings-section" aria-labelledby="share-section-title">
+      <h3 id="share-section-title" class="settings-section-title">Share</h3>
+      <div class="settings-group">
+        <button id="share-open-settings" class="settings-row-button" type="button">
+          <span class="switch-text">Share this board<small>QR code and link</small></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
     <!-- Shown by install.js when the app can be installed and isn't yet -->
     <section id="install-section" class="settings-section" aria-labelledby="install-section-title" hidden>
       <h3 id="install-section-title" class="settings-section-title">App</h3>
@@ -267,25 +317,6 @@
     </section>
   </dialog>
 
-  <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title">
-    <div class="share-dialog-header">
-      <h2 id="share-dialog-title" class="card-title">Share this board</h2>
-      <button id="share-close" class="btn btn-secondary btn-icon" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-    <!-- QR code is drawn here by renderQrCode() -->
-    <div id="share-qr" class="share-qr"></div>
-    <p class="small-text share-hint">Scan with a phone camera to open this board.</p>
-    <input id="share-url" class="share-url" type="text" readonly aria-label="Board link" />
-    <div class="share-actions">
-      <button id="share-copy" class="btn btn-primary" type="button">Copy link</button>
-      <button id="share-native" class="btn btn-secondary" type="button" hidden>Share…</button>
-    </div>
-  </dialog>
 
   <!-- Install prompt: a bottom sheet on phones, a card on wider screens -->
   <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-title" aria-describedby="install-text">

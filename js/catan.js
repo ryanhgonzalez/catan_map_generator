@@ -546,38 +546,138 @@ function fillBalancePill(el, balance) {
     el.dataset.level = balance.label.toLowerCase();
 }
 
-// ----- Share dialog -----
+// ----- Share card -----
+// Hold the board card, then swipe it up, to reveal a share card under it:
+// the board's QR code (so a phone at the table can scan it), its link,
+// Copy link, and Share… where the Web Share API exists. The board card
+// parks with its bottom edge peeking above; tap or pull it down to go back.
+// Settings > Share, and the header button on wider screens, open it too.
+
+// How much of the board card stays visible when parked, in px
+var SHARE_PEEK_PX = 72;
+// How long to hold the board card before it lifts, in ms
+var CARD_HOLD_MS = 500;
+var shareOpen = false;
 
 /**
- * The share button opens a dialog with a QR code of the board's link (so a
- * phone at the table can scan it off a laptop), the link itself, Copy
- * link, and Share… where the browser supports the Web Share API.
+ * Show a hint pill where the pager sits ("Swipe up to share"), or hide it
+ * with null.
  */
-function setUpShareDialog() {
-    const dialog = document.getElementById("share-dialog");
+function setCardHint(text) {
+    const hint = document.getElementById("card-hint");
+    if (text) hint.querySelector(".card-hint-text").textContent = text;
+    document.querySelector(".board-panel").classList.toggle("show-hint", !!text);
+}
+
+/** Fill the share card with the current board's link and QR code. */
+function prepareShareCard() {
+    const url = new URL(window.location);
+    url.searchParams.set("board", encodeBoardShort());
+    const shareUrl = url.toString();
+    renderQrCode(document.getElementById("share-qr"), shareUrl);
+    document.getElementById("share-url").value = shareUrl;
+    document.getElementById("share-copy").textContent = "Copy link";
+    document.getElementById("share-native").hidden = !navigator.share;
+}
+
+// The board card's parked position: moved up, clipped to its bottom strip
+function parkedFrame(card) {
+    const hidden = card.offsetHeight - SHARE_PEEK_PX;
+    return {
+        transform: `translateY(${-hidden}px)`,
+        clipPath: `inset(${hidden}px 0 0 0 round 0 0 24px 24px)`
+    };
+}
+
+const UNPARKED_CLIP = "inset(0px 0 0 0 round 0 0 24px 24px)";
+
+/** Board navigation is off while the share card shows (the QR would go stale) */
+function setBoardControlsInert(inert) {
+    document.querySelector(".board-nav").inert = inert;
+    document.getElementById("board-pager").inert = inert;
+}
+
+/**
+ * Reveal the share card: the board card slides up into its parked strip.
+ * fromTransform is where a held/swiped card currently is.
+ */
+async function openShareCard(fromTransform) {
+    if (shareOpen || boardSliding || !catanMap.hexTiles) return;
+    const card = document.getElementById("map-container");
+    const share = document.getElementById("share-card");
+    prepareShareCard();
+    share.hidden = false;
+    shareOpen = true;
+    document.body.classList.add("share-open");
+    setBoardControlsInert(true);
+    setCardHint(null);
+    document.getElementById("lift-dim").classList.remove("is-on");
+    document.querySelector(".card-stack").classList.remove("is-lifted");
+    card.classList.remove("is-lifted");
+
+    const parked = parkedFrame(card);
+    if (!motionReduced() && card.animate) {
+        boardSliding = true;
+        await card.animate([
+            { transform: fromTransform || "none", clipPath: UNPARKED_CLIP },
+            parked
+        ], { duration: 320, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
+        boardSliding = false;
+    }
+    card.style.transform = parked.transform;
+    card.style.clipPath = parked.clipPath;
+    share.focus({ preventScroll: true });
+}
+
+/** Drop the board card back over the share card. */
+async function closeShareCard() {
+    if (!shareOpen || boardSliding) return;
+    const card = document.getElementById("map-container");
+    const share = document.getElementById("share-card");
+    const parked = parkedFrame(card);
+    card.style.transform = "";
+    card.style.clipPath = "";
+    if (!motionReduced() && card.animate) {
+        boardSliding = true;
+        await card.animate([
+            parked,
+            { transform: "none", clipPath: UNPARKED_CLIP }
+        ], { duration: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
+        boardSliding = false;
+    }
+    share.hidden = true;
+    shareOpen = false;
+    document.body.classList.remove("share-open");
+    setBoardControlsInert(false);
+}
+
+function setUpShareCard() {
     const urlInput = document.getElementById("share-url");
     const copyButton = document.getElementById("share-copy");
     const nativeButton = document.getElementById("share-native");
 
-    $("#share-catan-board").click(() => {
-        const encoded = encodeBoardShort();
-        if (!encoded) return;
-
-        const url = new URL(window.location);
-        url.searchParams.set("board", encoded);
-        const shareUrl = url.toString();
-
-        renderQrCode(document.getElementById("share-qr"), shareUrl);
-        urlInput.value = shareUrl;
-        copyButton.textContent = "Copy link";
-        nativeButton.hidden = !navigator.share;
-        dialog.showModal();
+    // Header share button (wider screens) and Settings > Share
+    $("#share-catan-board").click(() => openShareCard());
+    $("#share-open-settings").click(() => {
+        const settings = document.getElementById("settings-dialog");
+        closeDialog(settings);
+        // Let the settings page slide away first
+        setTimeout(() => openShareCard(), motionReduced() ? 0 : 260);
     });
-
-    $("#share-close").click(() => closeDialog(dialog));
-
-    // Esc and backdrop clicks close it with the same animation (ui.js)
-    setUpDialogClosing(dialog);
+    $("#share-back").click(() => closeShareCard());
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && shareOpen && !document.querySelector("dialog[open]")) {
+            closeShareCard();
+        }
+    });
+    // Keep the parked strip the right size if the card changes size
+    window.addEventListener("resize", () => {
+        if (!shareOpen || boardSliding) return;
+        const card = document.getElementById("map-container");
+        const parked = parkedFrame(card);
+        card.style.transform = parked.transform;
+        card.style.clipPath = parked.clipPath;
+    });
 
     // Select the whole link on focus so it's easy to copy by hand
     urlInput.addEventListener("focus", () => urlInput.select());
@@ -601,7 +701,7 @@ function setUpShareDialog() {
                 url: urlInput.value
             });
         } catch (err) {
-            // Cancelled or failed; the dialog stays open with the other options
+            // Cancelled or failed; the share card stays open
         }
     });
 }
@@ -717,7 +817,7 @@ function init() {
             });
         });
 
-        setUpShareDialog();
+        setUpShareCard();
         setUpBoardSwipe();
         setUpPagerScrub();
 
@@ -821,6 +921,28 @@ function addBoardToHistory(state) {
     boardHistory.push(state);
     currentBoardIndex = boardHistory.length - 1;
     enableButtons();
+    if (boardHistory.length === 1) maybeShowShareTip();
+}
+
+var SHARE_TIP_KEY = "shareTipShown";
+
+/**
+ * The first time someone uses the app on a touch screen, point out the
+ * hidden hold-to-share gesture for a few seconds.
+ */
+function maybeShowShareTip() {
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    try {
+        if (localStorage.getItem(SHARE_TIP_KEY)) return;
+        localStorage.setItem(SHARE_TIP_KEY, "1");
+    } catch (err) {
+        return;
+    }
+    setCardHint("Hold the board to share");
+    setTimeout(() => {
+        const text = document.querySelector("#card-hint .card-hint-text").textContent;
+        if (text === "Hold the board to share") setCardHint(null);
+    }, 4000);
 }
 
 // ----- Card swipe -----
@@ -967,17 +1089,29 @@ function showNewBoard() {
 }
 
 /**
- * Drag the card left or right: it follows the finger and tilts, with the
- * board you'd move to showing underneath. Past the threshold it flies off;
- * otherwise it springs back. Swiping right on the first board just
- * resists. Vertical drags are left to the page (touch-action: pan-y).
+ * Gestures on the board card:
+ * - Drag left or right: it follows the finger and tilts, with the board
+ *   you'd move to showing underneath. Past the threshold it flies off;
+ *   otherwise it springs back. Swiping right on the first board resists.
+ * - Hold still for CARD_HOLD_MS: the card lifts (the page dims). Then swipe
+ *   up past a third of its height and release to reveal the share card.
+ * - While the share card shows, tap or pull down the peeking strip to go
+ *   back.
+ * Vertical drags that don't start with a hold are left to the page
+ * (touch-action: pan-y).
  */
 function setUpBoardSwipe() {
     const card = document.getElementById("map-container");
+    const stack = document.querySelector(".card-stack");
     const back = document.getElementById("map-back");
+    const share = document.getElementById("share-card");
+    const dim = document.getElementById("lift-dim");
     let start = null;
     let dragging = false;
     let offset = 0;
+    let holdTimer = null;
+    let lifted = false;
+    let liftY = 0;
     // The move for the direction being dragged, prepared once per direction
     let kind = null;
     let move = null;
@@ -987,11 +1121,54 @@ function setUpBoardSwipe() {
         ? "prev"
         : (currentBoardIndex < boardHistory.length - 1 ? "next" : "new");
 
+    const shareThreshold = () => card.offsetHeight / 3;
+
     const reset = () => {
+        clearTimeout(holdTimer);
+        holdTimer = null;
         start = null;
         dragging = false;
         kind = null;
         move = null;
+    };
+
+    const lift = () => {
+        holdTimer = null;
+        if (!start || boardSliding) return;
+        lifted = true;
+        liftY = 0;
+        // Fill the share card now, so it's complete as it comes into view
+        prepareShareCard();
+        card.setPointerCapture(start.id);
+        card.classList.add("is-lifted");
+        stack.classList.add("is-lifted");
+        dim.classList.add("is-on");
+        setCardHint("Swipe up to share");
+        if (!motionReduced() && card.animate) {
+            card.animate([{ transform: "scale(1)" }, { transform: "scale(1.05)" }],
+                { duration: 160, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+        }
+        card.style.transform = "scale(1.05)";
+        if (navigator.vibrate) navigator.vibrate(12);
+    };
+
+    // Let go of a lift without sharing: settle back down
+    const drop = (fromY) => {
+        lifted = false;
+        card.classList.remove("is-lifted");
+        stack.classList.remove("is-lifted");
+        dim.classList.remove("is-on");
+        setCardHint(null);
+        card.style.transform = "";
+        if (!motionReduced() && card.animate) {
+            card.animate([
+                { transform: `translateY(${fromY}px) scale(1.05)` },
+                { transform: "none" }
+            ], { duration: 240, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" })
+                .finished.then(() => { if (!shareOpen) share.hidden = true; });
+        } else {
+            share.hidden = true;
+        }
     };
 
     card.addEventListener("pointerdown", (event) => {
@@ -999,13 +1176,31 @@ function setUpBoardSwipe() {
         if (event.pointerType === "mouse" && event.button !== 0) return;
         reset();
         start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+        // A parked card only goes back down; no lifting or board swipes
+        if (!shareOpen) holdTimer = setTimeout(lift, CARD_HOLD_MS);
     });
 
     card.addEventListener("pointermove", (event) => {
         if (!start || event.pointerId !== start.id) return;
         const moveX = event.clientX - start.x;
         const moveY = event.clientY - start.y;
+
+        if (shareOpen) return;
+
+        if (lifted) {
+            // Only upward travel counts; the card follows the finger
+            liftY = Math.min(0, moveY);
+            card.style.transform = `translateY(${liftY}px) scale(1.05)`;
+            share.hidden = liftY > -6;
+            setCardHint(-liftY >= shareThreshold() ? "Release to share" : "Swipe up to share");
+            return;
+        }
+
         if (!dragging) {
+            if (Math.abs(moveX) < 8 && Math.abs(moveY) < 8) return;
+            // Moving before the hold completes: not a lift
+            clearTimeout(holdTimer);
+            holdTimer = null;
             if (Math.abs(moveX) < 8) return;
             // Mostly vertical: not a swipe
             if (Math.abs(moveY) > Math.abs(moveX)) {
@@ -1035,13 +1230,42 @@ function setUpBoardSwipe() {
         if (move) setBackCardProgress(Math.min(1, Math.abs(offset) / (card.offsetWidth * 0.6)));
     });
 
+    // While lifted, stop the page scrolling under the finger (the card has
+    // touch-action: pan-y so ordinary vertical drags still scroll)
+    card.addEventListener("touchmove", (event) => {
+        if (lifted) event.preventDefault();
+    }, { passive: false });
+
+    // A long press shouldn't open a context menu
+    card.addEventListener("contextmenu", (event) => event.preventDefault());
+
     const finish = (event) => {
         if (!start || event.pointerId !== start.id) return;
         const wasDragging = dragging;
         const thisMove = move;
         const fromX = offset;
+        const travelY = event.clientY - start.y;
+        const travelX = event.clientX - start.x;
         reset();
         card.classList.remove("is-dragging");
+
+        // Parked: a tap or a pull down on the strip goes back to the board
+        if (shareOpen) {
+            const tap = Math.abs(travelX) < 8 && Math.abs(travelY) < 8;
+            if (event.type === "pointerup" && (tap || travelY > 30)) closeShareCard();
+            return;
+        }
+
+        if (lifted) {
+            if (event.type === "pointerup" && -liftY >= shareThreshold()) {
+                lifted = false;
+                openShareCard(`translateY(${liftY}px) scale(1.05)`);
+            } else {
+                drop(liftY);
+            }
+            return;
+        }
+
         if (!wasDragging) return;
 
         if (event.type === "pointerup" && thisMove && Math.abs(fromX) >= SWIPE_THRESHOLD_PX) {
