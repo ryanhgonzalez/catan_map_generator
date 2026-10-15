@@ -762,6 +762,15 @@ body {
   color: var(--text-primary);
   box-shadow: -24px 0 48px rgba(0, 0, 0, 0.35);
   overflow-y: auto;
+  /* Swipes past the top or bottom stay here. Otherwise iOS hands them to
+     the page behind, which can't scroll, and the next swipes here do
+     nothing until it lets go. */
+  overscroll-behavior: contain;
+}
+
+/* The page behind doesn't scroll while Settings or Rules is open */
+:root:has(.settings-dialog[open]) {
+  overflow: hidden;
 }
 
 .settings-dialog[open] {
