@@ -33,6 +33,8 @@
   --nav-bg: rgba(11, 17, 32, 0.92);
   --nav-border: rgba(148, 163, 184, 0.25);
   --level-great: #4ade80;
+  --dot-past: rgba(229, 231, 235, 0.55);
+  --dot-future: rgba(148, 163, 184, 0.3);
   --level-good: #a3e635;
   --level-fair: #fbbf24;
   --level-uneven: #f87171;
@@ -73,6 +75,8 @@
   --nav-bg: rgba(255, 255, 255, 0.92);
   --nav-border: rgba(100, 116, 139, 0.25);
   --level-great: #15803d;
+  --dot-past: rgba(30, 41, 59, 0.5);
+  --dot-future: rgba(100, 116, 139, 0.3);
   --level-good: #4d7c0f;
   --level-fair: #b45309;
   --level-uneven: #b91c1c;
@@ -195,7 +199,7 @@ body {
 .map-container {
   position: relative;
   width: 100%;
-  height: clamp(420px, calc(100dvh - 200px), 820px);
+  height: clamp(420px, calc(100dvh - 232px), 820px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--board-border);
@@ -258,6 +262,57 @@ canvas#map-canvas {
 .board-balance[data-level="good"] .balance-label { color: var(--level-good); }
 .board-balance[data-level="fair"] .balance-label { color: var(--level-fair); }
 .board-balance[data-level="uneven"] .balance-label { color: var(--level-uneven); }
+
+/* Session pager under the board card */
+.board-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 20px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Hold its space before the first board so the card doesn't shift */
+.board-pager[hidden] {
+  display: flex;
+  visibility: hidden;
+}
+
+.pager-index {
+  color: var(--text-strong);
+}
+
+.pager-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pager-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--dot-future);
+  transition: width var(--transition-fast), background-color var(--transition-fast);
+}
+
+.pager-dot.is-past {
+  background: var(--dot-past);
+}
+
+.pager-dot.is-current {
+  width: 18px;
+  background: var(--accent);
+}
+
+/* Window ends when more boards lie beyond them */
+.pager-dot.is-edge {
+  width: 4px;
+  height: 4px;
+  opacity: 0.6;
+}
 
 /* Previous / New board / Next: a centered row of round buttons under the
    board on wider screens, a bottom nav bar on phones (see the media query) */
@@ -1019,7 +1074,7 @@ canvas#map-canvas {
   /* A tall board card: up to 520px, less on shorter phones so the header and
      nav bar still fit */
   .map-container {
-    height: min(520px, calc(100dvh - 240px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    height: min(520px, calc(100dvh - 272px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     min-height: 340px;
   }
 

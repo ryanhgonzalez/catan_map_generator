@@ -851,6 +851,47 @@ function enableButtons() {
     goBackButton.disabled = currentBoardIndex <= 0;
     goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
     shareButton.disabled = !hasBoard;
+    updatePager();
+}
+
+// Most dots the pager shows; longer sessions show a window around the
+// current board
+var PAGER_MAX_DOTS = 9;
+
+/**
+ * Pager under the board: one dot per board in this session's history (the
+ * current one stretched), plus "3 of 7".
+ */
+function updatePager() {
+    const pager = document.getElementById("board-pager");
+    const total = boardHistory.length;
+    if (!pager || total === 0) return;
+
+    const current = currentBoardIndex;
+    const count = Math.min(total, PAGER_MAX_DOTS);
+    // Center the window on the current board, clamped to the history
+    const start = Math.max(0, Math.min(current - Math.floor(PAGER_MAX_DOTS / 2), total - count));
+
+    // Reuse the dot elements and only change their classes, so the current
+    // dot's stretch animates when stepping back and forth
+    const dotsEl = pager.querySelector(".pager-dots");
+    while (dotsEl.children.length < count) {
+        dotsEl.appendChild(document.createElement("span"));
+    }
+    while (dotsEl.children.length > count) {
+        dotsEl.lastElementChild.remove();
+    }
+    Array.from(dotsEl.children).forEach((dot, k) => {
+        const i = start + k;
+        // Shrink the ends of a window that doesn't reach the first/last board
+        const cutOff = (k === 0 && start > 0) || (k === count - 1 && start + count < total);
+        dot.className = "pager-dot" +
+            (i === current ? " is-current" : i < current ? " is-past" : "") +
+            (cutOff && i !== current ? " is-edge" : "");
+    });
+    pager.querySelector(".pager-index").textContent = current + 1;
+    pager.querySelector(".pager-total").textContent = total;
+    pager.hidden = false;
 }
 
 function MapDefinition() {
