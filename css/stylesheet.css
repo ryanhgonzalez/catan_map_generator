@@ -42,6 +42,7 @@
   --level-good: #a3e635;
   --level-fair: #fbbf24;
   --level-uneven: #f87171;
+  --danger: #f87171;
   --radius-lg: 18px;
   --radius-md: 12px;
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.6);
@@ -85,6 +86,7 @@
   --level-good: #4d7c0f;
   --level-fair: #b45309;
   --level-uneven: #b91c1c;
+  --danger: #b91c1c;
   --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.12);
 }
 
@@ -858,6 +860,17 @@ body {
 .settings-row-button svg {
   flex-shrink: 0;
   color: var(--text-muted);
+}
+
+/* A row that throws something away, like Clear all boards */
+.settings-row-danger,
+.settings-row-danger svg {
+  color: var(--danger);
+}
+
+.settings-row-button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .settings-row-button:focus-visible {

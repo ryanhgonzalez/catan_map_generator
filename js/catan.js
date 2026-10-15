@@ -867,6 +867,17 @@ function init() {
             });
         });
 
+        // Settings > Clear all boards, after a check (it can't be undone)
+        $("#clear-boards").click(() => {
+            const total = boardHistory.length;
+            const question = total === 1
+                ? "Clear the board from this session? This can't be undone."
+                : `Clear all ${total} boards from this session? This can't be undone.`;
+            if (!window.confirm(question)) return;
+            closeDialog(document.getElementById("settings-dialog"));
+            clearAllBoards();
+        });
+
         setUpShareCard();
         setUpBoardSwipe();
         setUpPagerScrub();
@@ -1578,6 +1589,37 @@ function enableButtons() {
     goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
     shareButton.disabled = !hasBoard;
     updatePager();
+
+    // Settings > Clear all boards
+    const total = boardHistory.length;
+    document.getElementById("clear-boards").disabled = total === 0;
+    document.getElementById("clear-boards-note").textContent = total === 0
+        ? "No boards yet"
+        : `${total} board${total === 1 ? "" : "s"} this session`;
+}
+
+/**
+ * Forget every board generated this session and go back to the empty card
+ * the app starts with.
+ */
+async function clearAllBoards() {
+    if (!(await settleMotion())) return;
+    if (shareOpen) {
+        shareOpen = false;
+        document.body.classList.remove("share-open");
+        setBoardControlsInert(false);
+        resetShareCard();
+    }
+    boardHistory = [];
+    currentBoardIndex = -1;
+    catanMap.hexTiles = null;
+    drawingContext.clear();
+    document.getElementById("board-balance").hidden = true;
+    // The address bar no longer shares a board
+    const url = new URL(window.location);
+    url.searchParams.delete("board");
+    window.history.replaceState({}, "", url);
+    enableButtons();
 }
 
 // Most dots the pager shows; longer sessions show a window around the
@@ -1591,7 +1633,11 @@ var PAGER_MAX_DOTS = 9;
 function updatePager() {
     const pager = document.getElementById("board-pager");
     const total = boardHistory.length;
-    if (!pager || total === 0) return;
+    if (!pager) return;
+    if (total === 0) {
+        pager.hidden = true;
+        return;
+    }
 
     const current = currentBoardIndex;
     const count = Math.min(total, PAGER_MAX_DOTS);
