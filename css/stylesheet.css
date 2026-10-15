@@ -226,6 +226,17 @@ canvas#map-canvas {
   min-height: 0;
   width: 100%;
   display: block;
+  /* Swiping drags the board; don't select it or pop the iOS image menu */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Horizontal drags on the board are swipes (catan.js); vertical ones still
+   scroll the page and pinch still zooms */
+#map-container,
+#map-container * {
+  touch-action: pan-y pinch-zoom;
 }
 
 /* Fairness score pill at the bottom of the board card */

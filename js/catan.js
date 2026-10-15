@@ -664,14 +664,14 @@ function init() {
     loadImages(function () {
         // Wire up buttons (we do this after images are loaded to keep behavior consistent)
         const genButton = $('button#gen-map-button')[0];
-        $(genButton).click(generate);
+        $(genButton).click(showNewBoard);
         genButton.disabled = false;
 
         const goBackButton = $('button#gen-map-back-button')[0];
-        $(goBackButton).click(goBack);
+        $(goBackButton).click(() => showPreviousBoard());
 
         const goForwardButton = $('button#gen-map-forward-button')[0];
-        $(goForwardButton).click(goForward);
+        $(goForwardButton).click(() => showNextBoard());
 
         // Hiding harbors also gives the tiles the room the harbors used
         const harborsToggle = document.getElementById("show-harbors");
@@ -709,6 +709,7 @@ function init() {
         });
 
         setUpShareDialog();
+        setUpBoardSwipe();
 
         enableButtons();
 
@@ -807,6 +808,144 @@ function generate() {
     currentBoardIndex = boardHistory.length - 1;
 
     enableButtons();
+}
+
+// ----- Board transitions and swipe -----
+
+// How far a swipe must travel to change board, in px
+var SWIPE_THRESHOLD_PX = 60;
+// True while a board is sliding out/in; input waits for it to finish
+var boardSliding = false;
+
+function motionReduced() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * Slide the board off toward `direction` (1 = right, to show an earlier
+ * board; -1 = left, for a later or new one), run change() to draw the next
+ * board, then slide that in from the other side. startOffset is where a
+ * swipe left the board (px). Without motion, just changes the board.
+ */
+async function slideBoard(direction, change, startOffset) {
+    if (motionReduced() || !mapCanvas.animate) {
+        mapCanvas.style.transform = "";
+        change();
+        return;
+    }
+    boardSliding = true;
+    const width = mapCanvas.clientWidth;
+    const out = mapCanvas.animate([
+        { transform: `translateX(${startOffset || 0}px)`, opacity: 1 },
+        { transform: `translateX(${direction * width * 0.6}px)`, opacity: 0 }
+    ], { duration: 140, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
+    // The animation holds the drag position from here on
+    mapCanvas.style.transform = "";
+    await out.finished;
+
+    change();
+    // Cancel and start the next animation in the same task, so the new
+    // board never paints in the middle for a frame
+    out.cancel();
+    const into = mapCanvas.animate([
+        { transform: `translateX(${-direction * width * 0.4}px)`, opacity: 0 },
+        { transform: "translateX(0)", opacity: 1 }
+    ], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    await into.finished;
+    boardSliding = false;
+}
+
+function showPreviousBoard(startOffset) {
+    if (boardSliding || currentBoardIndex <= 0) return;
+    slideBoard(1, goBack, startOffset);
+}
+
+function showNextBoard(startOffset) {
+    if (boardSliding || currentBoardIndex >= boardHistory.length - 1) return;
+    slideBoard(-1, goForward, startOffset);
+}
+
+function showNewBoard() {
+    if (boardSliding) return;
+    // The very first board has nothing to slide away
+    if (!catanMap.hexTiles) {
+        generate();
+        return;
+    }
+    slideBoard(-1, generate);
+}
+
+/**
+ * Swipe the board left/right to step through this session's boards. The
+ * board follows the finger, rubber-bands where there's no board to go to,
+ * and snaps back on a short or cancelled swipe. Vertical drags are left to
+ * the page (touch-action: pan-y in the CSS).
+ */
+function setUpBoardSwipe() {
+    const card = document.getElementById("map-container");
+    let start = null;
+    let dragging = false;
+    let dx = 0;
+
+    const canGo = (towardRight) => towardRight
+        ? currentBoardIndex > 0
+        : currentBoardIndex < boardHistory.length - 1;
+
+    card.addEventListener("pointerdown", (event) => {
+        if (!event.isPrimary || boardSliding || !catanMap.hexTiles) return;
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+        dragging = false;
+        dx = 0;
+    });
+
+    card.addEventListener("pointermove", (event) => {
+        if (!start || event.pointerId !== start.id) return;
+        const moveX = event.clientX - start.x;
+        const moveY = event.clientY - start.y;
+        if (!dragging) {
+            if (Math.abs(moveX) < 8) return;
+            // Mostly vertical: not a swipe
+            if (Math.abs(moveY) > Math.abs(moveX)) {
+                start = null;
+                return;
+            }
+            dragging = true;
+            card.setPointerCapture(event.pointerId);
+        }
+        dx = moveX;
+        // Follow the finger, or resist where there's no board that way
+        const shown = canGo(dx > 0) ? dx : dx * 0.25;
+        mapCanvas.style.transform = `translateX(${shown}px)`;
+    });
+
+    const finish = (event) => {
+        if (!start || event.pointerId !== start.id) return;
+        const wasDragging = dragging;
+        start = null;
+        dragging = false;
+        if (!wasDragging) return;
+
+        const shown = canGo(dx > 0) ? dx : dx * 0.25;
+        const committed = event.type === "pointerup" &&
+            Math.abs(dx) >= SWIPE_THRESHOLD_PX && canGo(dx > 0);
+        if (committed && dx > 0) {
+            showPreviousBoard(shown);
+        } else if (committed) {
+            showNextBoard(shown);
+        } else {
+            // Spring back
+            mapCanvas.style.transform = "";
+            if (!motionReduced() && mapCanvas.animate) {
+                mapCanvas.animate([
+                    { transform: `translateX(${shown}px)` },
+                    { transform: "translateX(0)" }
+                ], { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+            }
+        }
+    };
+    card.addEventListener("pointerup", finish);
+    card.addEventListener("pointercancel", finish);
 }
 
 function goBack() {
