@@ -74,29 +74,6 @@
         </p>
       </div>
 
-      <!-- Share card: revealed by holding the board card and swiping it up;
-           the board card then parks its bottom edge above this -->
-      <section id="share-card" class="map-container share-card" aria-labelledby="share-card-title" tabindex="-1" hidden>
-        <button id="share-back" class="share-back" type="button">Back to board</button>
-        <h2 id="share-card-title" class="share-card-title">Share this board</h2>
-        <!-- QR code is drawn here by renderQrCode() -->
-        <div id="share-qr" class="share-qr"></div>
-        <p class="share-scan-hint">Scan with a phone camera to open this board.</p>
-        <input id="share-url" class="share-url" type="text" readonly aria-label="Board link" />
-        <div class="share-actions">
-          <button id="share-copy" class="btn btn-primary" type="button">Copy link</button>
-          <button id="share-native" class="btn btn-secondary" type="button" hidden>
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
-              <path d="M16 6l-4-4-4 4" />
-              <path d="M12 2v13" />
-            </svg>
-            Share…
-          </button>
-        </div>
-      </section>
-
       <div id="map-container" class="map-container">
         <!-- Canvas is injected by catan.js via addCanvas() -->
         <div class="map-loading-state" id="map-loading-state">
@@ -111,8 +88,32 @@
           <span class="balance-label"></span>
           <span class="balance-reason"></span>
         </p>
-        <span class="card-handle" aria-hidden="true"></span>
+        <!-- Dims the board card while it steps back behind the share card -->
+        <span class="card-shade" aria-hidden="true"></span>
       </div>
+
+      <!-- Share card: rises over the board card when it's swiped up; the
+           board card steps back behind it, its top edge peeking above -->
+      <section id="share-card" class="map-container share-card" aria-labelledby="share-card-title" tabindex="-1" hidden>
+        <span class="card-handle" aria-hidden="true"></span>
+        <button id="share-back" class="share-back" type="button">Back to board</button>
+        <h2 id="share-card-title" class="share-card-title">Share this board</h2>
+        <!-- QR code is drawn here by renderQrCode() -->
+        <div id="share-qr" class="share-qr"></div>
+        <p class="share-scan-hint">Scan with a phone camera to open this board.</p>
+        <div class="share-actions">
+          <button id="share-copy" class="btn btn-primary" type="button">Copy link</button>
+          <button id="share-native" class="btn btn-secondary" type="button" hidden>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+              <path d="M16 6l-4-4-4 4" />
+              <path d="M12 2v13" />
+            </svg>
+            Share…
+          </button>
+        </div>
+      </section>
       </div>
 
       <!-- Session pager: one dot per board generated this session -->
@@ -163,9 +164,6 @@
       <span class="nav-label">Next</span>
     </button>
   </nav>
-
-  <!-- Dims the page behind the board card while it's held -->
-  <div id="lift-dim" class="lift-dim" aria-hidden="true"></div>
 
   <!-- Settings: a full page on phones, a side panel on wider screens -->
   <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">

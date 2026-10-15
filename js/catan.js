@@ -547,15 +547,15 @@ function fillBalancePill(el, balance) {
 }
 
 // ----- Share card -----
-// Swipe the board card up to reveal a share card under it:
-// the board's QR code (so a phone at the table can scan it), its link,
-// Copy link, and Share… where the Web Share API exists. The board card
-// parks with its bottom edge peeking above; tap or pull it down to go back.
-// Settings > Share, and the header button on wider screens, open it too.
+// Swipe the board card up and a share card rises from the bottom over it: the board's QR code (so a phone at the table can scan
+// it), Copy link, and Share… where the Web Share API exists. The board card
+// steps back behind it, its top edge peeking above; tap that or pull the
+// share card down to go back. Settings > Share, and the header button on
+// wider screens, open it too.
 
-// How much of the board card stays visible when parked, in px
-var SHARE_PEEK_PX = 72;
 var shareOpen = false;
+// The link the share card shows, for Copy link and Share…
+var shareUrl = "";
 
 /**
  * Show a hint pill where the pager sits ("Swipe up to share"), or hide it
@@ -571,21 +571,10 @@ function setCardHint(text) {
 function prepareShareCard() {
     const url = new URL(window.location);
     url.searchParams.set("board", encodeBoardShort());
-    const shareUrl = url.toString();
+    shareUrl = url.toString();
     renderQrCode(document.getElementById("share-qr"), shareUrl);
-    document.getElementById("share-url").value = shareUrl;
     document.getElementById("share-copy").textContent = "Copy link";
     document.getElementById("share-native").hidden = !navigator.share;
-}
-
-// The board card's parked position: moved up by all but its bottom strip
-function parkedY(card) {
-    return -(card.offsetHeight - SHARE_PEEK_PX);
-}
-
-// Clip the top `px` off the board card (rounded bottom corners kept)
-function clipTop(px) {
-    return `inset(${Math.max(0, px)}px 0 0 0 round 0 0 24px 24px)`;
 }
 
 /** Board navigation is off while the share card shows (the QR would go stale) */
@@ -594,100 +583,111 @@ function setBoardControlsInert(inert) {
     document.getElementById("board-pager").inert = inert;
 }
 
+// Where the share card waits while away: just below the main area, which
+// clips it (so it rises from above the bottom nav bar), as px down from its
+// open spot
+function shareAwayY() {
+    const share = document.getElementById("share-card");
+    const top = document.querySelector(".card-stack").getBoundingClientRect().top + share.offsetTop;
+    return document.querySelector(".app-main").getBoundingClientRect().bottom - top + 24;
+}
+
 /**
- * Reveal the share card: the board card springs up into its parked strip,
- * its top clipped away as it goes. fromPose is where a swiped card is
- * ({x, y, r, s}); velocityY the swipe's speed at release (px/ms).
+ * The share card at y px below its open spot (awayY: fully away) and the
+ * board card behind it: as the share card comes up, the board card shrinks
+ * back (its top edge staying put, to peek above the share card) and dims.
+ * Returned as tracks for playFrames, or applyShareY to set them directly.
  */
-async function openShareCard(fromPose, velocityY) {
+function shareTracks(awayY) {
+    const card = document.getElementById("map-container");
+    const height = card.offsetHeight;
+    const progress = (y) => Math.max(0, Math.min(1, 1 - y / awayY));
+    return [
+        { el: document.getElementById("share-card"), style: (v) => ({ transform: `translateY(${v.y}px)` }) },
+        { el: card, style: (v) => {
+            const s = 1 - 0.08 * progress(v.y);
+            // The card scales around a point 120% down (for its tilt), so
+            // move it up by as much as that brings its top edge down
+            return { transform: poseTransform({ y: -1.2 * height * (1 - s), s: s }) };
+        } },
+        { el: card.querySelector(".card-shade"), style: (v) => ({ opacity: String(progress(v.y)) }) }
+    ];
+}
+
+function applyShareY(y, awayY) {
+    shareTracks(awayY).forEach((track) => Object.assign(track.el.style, track.style({ y: y })));
+}
+
+// Spring the share card from one y to another (see shareTracks)
+async function springShareCard(from, to, velocityY, awayY, stiffness, damping) {
+    if (motionReduced()) {
+        applyShareY(to, awayY);
+        return;
+    }
+    boardSliding = true;
+    const spring = playFrames(simulateSpring({
+        from: { y: from },
+        to: { y: to },
+        velocity: { y: (velocityY || 0) * 1000 },
+        stiffness: stiffness,
+        damping: damping
+    }), shareTracks(awayY));
+    activeMotion = spring;
+    await spring.done;
+    applyShareY(to, awayY);
+    spring.cancel();
+    activeMotion = null;
+    boardSliding = false;
+}
+
+// Share card away: hide it and put the board card back as it was
+function resetShareCard() {
+    const card = document.getElementById("map-container");
+    const share = document.getElementById("share-card");
+    share.hidden = true;
+    share.style.transform = "";
+    card.style.transform = "";
+    card.querySelector(".card-shade").style.opacity = "";
+    document.querySelector(".card-stack").classList.remove("is-lifted");
+}
+
+/**
+ * Bring the share card up. fromY is where a swipe left it (px below its
+ * open spot), velocityY the swipe's speed at release (px/ms); with neither
+ * it rises from below the screen.
+ */
+async function openShareCard(fromY, velocityY) {
     if (shareOpen || !catanMap.hexTiles) return;
     if (!(await settleMotion())) return;
-    const card = document.getElementById("map-container");
     const share = document.getElementById("share-card");
     prepareShareCard();
     share.hidden = false;
     shareOpen = true;
+    document.querySelector(".card-stack").classList.add("is-lifted");
     document.body.classList.add("share-open");
     setBoardControlsInert(true);
     setCardHint(null);
-    document.getElementById("lift-dim").classList.remove("is-on");
-    document.querySelector(".card-stack").classList.remove("is-lifted");
-    card.classList.remove("is-lifted");
-
-    const target = parkedY(card);
-    const from = Object.assign({ x: 0, y: 0, r: 0, s: 1 }, fromPose);
-    // The clip grows from nothing at the release point to the hidden
-    // height when parked, so it never jumps
-    const apply = (pose) => {
-        const progress = (pose.y - from.y) / (target - from.y);
-        card.style.transform = poseTransform(pose);
-        card.style.clipPath = clipTop(-target * progress);
-    };
-    if (motionReduced()) {
-        apply({ x: 0, y: target, r: 0, s: 1 });
-    } else {
-        boardSliding = true;
-        const spring = playFrames(simulateSpring({
-            from: from,
-            to: { x: 0, y: target, r: 0, s: 1 },
-            velocity: { y: (velocityY || 0) * 1000 },
-            stiffness: 260,
-            damping: 29
-        }), [{ el: card, style: (pose) => ({
-            transform: poseTransform(pose),
-            clipPath: clipTop(-target * (pose.y - from.y) / (target - from.y))
-        }) }]);
-        activeMotion = spring;
-        await spring.done;
-        apply({ x: 0, y: target, r: 0, s: 1 });
-        spring.cancel();
-        activeMotion = null;
-        boardSliding = false;
-    }
+    const awayY = shareAwayY();
+    await springShareCard(fromY === undefined ? awayY : fromY, 0, velocityY, awayY, 260, 29);
     share.focus({ preventScroll: true });
 }
 
 /**
- * Drop the board card back over the share card, springing down from the
- * parked strip. velocityY is a downward pull's speed (px/ms).
+ * Send the share card back down off the screen, from fromY (where a pull
+ * left it, default open) at velocityY (px/ms), and the board card forward.
  */
-async function closeShareCard(velocityY) {
+async function closeShareCard(velocityY, fromY) {
     if (!shareOpen) return;
     if (!(await settleMotion())) return;
-    const card = document.getElementById("map-container");
-    const share = document.getElementById("share-card");
-    const parked = parkedY(card);
-    // Closed as of now; the board card finishes springing back down
+    // Closed as of now; the share card finishes going down
     shareOpen = false;
     document.body.classList.remove("share-open");
     setBoardControlsInert(false);
-    if (!motionReduced()) {
-        boardSliding = true;
-        card.style.transform = "";
-        card.style.clipPath = "";
-        const spring = playFrames(simulateSpring({
-            from: { y: parked },
-            to: { y: 0 },
-            velocity: { y: (velocityY || 0) * 1000 },
-            stiffness: 300,
-            damping: 31
-        }), [{ el: card, style: (pose) => ({
-            transform: poseTransform(pose),
-            clipPath: clipTop(-parked * (pose.y / parked))
-        }) }]);
-        activeMotion = spring;
-        await spring.done;
-        spring.cancel();
-        activeMotion = null;
-        boardSliding = false;
-    }
-    card.style.transform = "";
-    card.style.clipPath = "";
-    share.hidden = true;
+    await springShareCard(fromY || 0, shareAwayY(), velocityY, shareAwayY(), 300, 31);
+    resetShareCard();
 }
 
 function setUpShareCard() {
-    const urlInput = document.getElementById("share-url");
     const copyButton = document.getElementById("share-copy");
     const nativeButton = document.getElementById("share-native");
 
@@ -705,26 +705,18 @@ function setUpShareCard() {
             closeShareCard();
         }
     });
-    // Keep the parked strip the right size if the card changes size
+    // Keep the board card stepped back right if the cards change size
     window.addEventListener("resize", () => {
-        if (!shareOpen || boardSliding) return;
-        const card = document.getElementById("map-container");
-        const parked = parkedY(card);
-        card.style.transform = poseTransform({ y: parked });
-        card.style.clipPath = clipTop(-parked);
+        if (shareOpen && !boardSliding) applyShareY(0, shareAwayY());
     });
-
-    // Select the whole link on focus so it's easy to copy by hand
-    urlInput.addEventListener("focus", () => urlInput.select());
 
     $(copyButton).click(async () => {
         try {
-            await navigator.clipboard.writeText(urlInput.value);
+            await navigator.clipboard.writeText(shareUrl);
             copyButton.textContent = "Copied!";
         } catch (err) {
-            // Clipboard blocked: select the link so the user can copy it
-            urlInput.focus();
-            copyButton.textContent = "Link selected, copy it";
+            // Clipboard blocked: show the link to copy by hand
+            window.prompt("Copy this link:", shareUrl);
         }
     });
 
@@ -733,7 +725,7 @@ function setUpShareCard() {
             await navigator.share({
                 title: "Catan Board",
                 text: "Check out this Catan board!",
-                url: urlInput.value
+                url: shareUrl
             });
         } catch (err) {
             // Cancelled or failed; the share card stays open
@@ -1273,11 +1265,11 @@ var FLICK_VELOCITY = 0.45;
  *   card), with the board you'd move to showing underneath. Past the
  *   threshold, or on a flick, it's thrown off; otherwise it springs back.
  *   Swiping right on the first board resists.
- * - Up: the page dims as it rises with the share card showing underneath.
- *   Past a quarter of its height, or on an upward flick, it springs into
- *   its parked strip; otherwise it springs back.
- * - While the share card shows: tap or pull down the peeking strip to go
- *   back.
+ * - Up: the share card rises from the bottom with the finger, the board card stepping back behind it. Past a quarter of the
+ *   card's height, or on an upward flick, it springs open; otherwise it
+ *   goes back down.
+ * - While the share card shows: tap the board card's peeking top edge, or
+ *   pull the share card down, to go back.
  * A new gesture during a motion finishes the motion at once. The stack has
  * touch-action: pinch-zoom, so one-finger drags are all ours (no page
  * scroll on the card) and pinch still zooms.
@@ -1287,11 +1279,15 @@ function setUpBoardSwipe() {
     const stack = document.querySelector(".card-stack");
     const back = document.getElementById("map-back");
     const share = document.getElementById("share-card");
-    const dim = document.getElementById("lift-dim");
     let start = null;
-    // null until the direction is picked: "x", "up", "down" or "parked"
+    // null until the direction is picked: "x", "up", "down", or with the
+    // share card open "open" (picking) and "pull" (pulling it down)
     let mode = null;
     let pose = { x: 0, y: 0, r: 0, s: 1 };
+    // The share card's y while swiping it up or pulling it down, and where
+    // it waits while away (see shareTracks)
+    let shareY = 0;
+    let awayY = 0;
     // How much the card tilts for where it was grabbed: 1 near the top,
     // less in the middle, the other way near the bottom (like a held card)
     let tiltScale = 1;
@@ -1328,36 +1324,25 @@ function setUpBoardSwipe() {
         samples = [];
     };
 
-    // Swipe up begins: lift the card over a dimming page, share card ready
+    // Swipe up begins: the share card, ready below the screen, comes up
+    // over the board card
     const beginUp = () => {
         prepareShareCard();
-        card.classList.add("is-lifted");
-        stack.classList.add("is-lifted");
-        dim.style.transition = "none";
-        dim.style.opacity = "0";
-        dim.classList.add("is-on");
-    };
-
-    const endUp = () => {
-        card.classList.remove("is-lifted");
-        stack.classList.remove("is-lifted");
-        dim.style.transition = "";
-        dim.style.opacity = "";
-        dim.classList.remove("is-on");
         setCardHint(null);
+        awayY = shareAwayY();
+        share.hidden = false;
+        stack.classList.add("is-lifted");
     };
 
     // Spring back to rest from a released pose, carrying its velocity
-    const springBack = (fromPose, vel, wasUp) => {
+    const springBack = (fromPose, vel) => {
         const width = card.offsetWidth;
-        if (wasUp) endUp();
         if (motionReduced()) {
             card.style.transform = "";
             hideBackCard();
-            if (!shareOpen) share.hidden = true;
             return;
         }
-        const withBack = !wasUp && back.classList.contains("is-visible");
+        const withBack = back.classList.contains("is-visible");
         const tracks = [{ el: card, style: (p) => ({ transform: poseTransform(p) }) }];
         if (withBack) {
             tracks.push({ el: back, style: (p) => backCardStyle(Math.min(1, Math.abs(p.x) / (width * 0.6))) });
@@ -1375,7 +1360,6 @@ function setUpBoardSwipe() {
             spring.cancel();
             if (activeMotion === spring) activeMotion = null;
             hideBackCard();
-            if (wasUp && !shareOpen) share.hidden = true;
         });
     };
 
@@ -1383,9 +1367,8 @@ function setUpBoardSwipe() {
     // out from under the finger, but a new swipe should still catch it
     stack.addEventListener("pointerdown", (event) => {
         if (!event.isPrimary || !catanMap.hexTiles) return;
-        // With the share card showing, only the board card's peeking strip
-        // is a gesture; the share card's own buttons work normally
-        if (shareOpen && !card.contains(event.target)) return;
+        // With the share card showing, its buttons work normally
+        if (shareOpen && event.target.closest("button, a")) return;
         if (event.pointerType === "mouse" && event.button !== 0) return;
         // Mid-motion: jump it to the end (its cleanup runs before the next
         // pointermove) and start this gesture straight away
@@ -1398,7 +1381,7 @@ function setUpBoardSwipe() {
             (rect.top + rect.height / 2 - event.clientY) / (rect.height / 2)));
         tiltScale = 0.25 + 0.75 * fromCenter;
         track(event);
-        if (shareOpen) mode = "parked";
+        if (shareOpen) mode = "open";
     });
 
     stack.addEventListener("pointermove", (event) => {
@@ -1406,7 +1389,20 @@ function setUpBoardSwipe() {
         track(event);
         const moveX = event.clientX - start.x;
         const moveY = event.clientY - start.y;
-        if (mode === "parked" || mode === "down") return;
+        if (mode === "down") return;
+
+        if (mode === "open") {
+            // Pulling down moves the share card; anything else is a tap
+            if (moveY < 6 || Math.abs(moveX) > moveY) return;
+            mode = "pull";
+            awayY = shareAwayY();
+            stack.setPointerCapture(event.pointerId);
+        }
+        if (mode === "pull") {
+            shareY = moveY > 0 ? moveY : moveY * 0.2;
+            applyShareY(shareY, awayY);
+            return;
+        }
 
         if (!mode) {
             if (Math.abs(moveX) < 6 && Math.abs(moveY) < 6) return;
@@ -1424,17 +1420,10 @@ function setUpBoardSwipe() {
         }
 
         if (mode === "up") {
-            const progress = Math.min(1, Math.max(0, -moveY) / shareThreshold());
-            pose = {
-                x: moveX * 0.3,
-                y: moveY < 0 ? moveY : moveY * 0.2,
-                r: moveX * 0.02,
-                s: 1 + 0.03 * progress
-            };
-            card.style.transform = poseTransform(pose);
-            dim.style.opacity = String(progress);
-            share.hidden = pose.y > -4;
-            setCardHint(progress >= 1 ? "Release to share" : "Swipe up to share");
+            // The share card follows the finger up from below the screen
+            shareY = Math.min(awayY, awayY + moveY);
+            if (shareY < 0) shareY *= 0.2;
+            applyShareY(shareY, awayY);
             return;
         }
 
@@ -1477,28 +1466,37 @@ function setUpBoardSwipe() {
         const thisMode = mode;
         const thisMove = move;
         const fromPose = Object.assign({}, pose);
+        const onBoard = card.contains(event.target) && !share.contains(event.target);
         reset();
         pose = { x: 0, y: 0, r: 0, s: 1 };
 
-        // Parked: a tap, a pull down or a downward flick goes back
-        if (thisMode === "parked") {
+        // Share card open: a tap on the board card's top edge goes back
+        if (thisMode === "open") {
             const tap = Math.abs(travelX) < 8 && Math.abs(travelY) < 8;
-            if (released && (tap || travelY > 30 || vel.y > FLICK_VELOCITY)) {
-                closeShareCard(Math.max(0, vel.y));
+            if (released && tap && onBoard) closeShareCard();
+            return;
+        }
+
+        // Pulled down far enough, or flicked down, it goes; else back up
+        if (thisMode === "pull") {
+            const flicked = vel.y > FLICK_VELOCITY && shareY > 24;
+            if (released && (shareY >= shareThreshold() || flicked)) {
+                closeShareCard(Math.max(0, vel.y), shareY);
+            } else {
+                springShareCard(shareY, 0, vel.y, awayY, 300, 31);
             }
             return;
         }
 
         if (thisMode === "up") {
-            const flicked = vel.y < -FLICK_VELOCITY && -fromPose.y > 24;
-            if (released && (-fromPose.y >= shareThreshold() || flicked)) {
-                card.classList.remove("is-lifted");
-                stack.classList.remove("is-lifted");
-                dim.style.transition = "";
-                dim.style.opacity = "";
-                openShareCard(fromPose, vel.y);
+            const risen = awayY - shareY;
+            const flicked = vel.y < -FLICK_VELOCITY && risen > 24;
+            if (released && (risen >= shareThreshold() || flicked)) {
+                openShareCard(shareY, vel.y);
             } else {
-                springBack(fromPose, vel, true);
+                springShareCard(shareY, awayY, vel.y, awayY, 300, 31).then(() => {
+                    if (!shareOpen) resetShareCard();
+                });
             }
             return;
         }
@@ -1511,7 +1509,7 @@ function setUpBoardSwipe() {
             flingCard(fromPose.x > 0 ? 1 : -1, thisMove, fromPose, vel);
             return;
         }
-        springBack(fromPose, vel, false);
+        springBack(fromPose, vel);
     };
     stack.addEventListener("pointerup", finish);
     stack.addEventListener("pointercancel", finish);

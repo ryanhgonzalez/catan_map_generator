@@ -13,6 +13,8 @@
   --board-bg: radial-gradient(ellipse at 50% 40%, #1c2638 0, #131c2d 55%, #0c1322 100%);
   --board-border: rgba(148, 163, 184, 0.18);
   --board-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  /* Over the board card while it steps back behind the share card */
+  --card-shade: rgba(2, 6, 23, 0.5);
   --pill-bg: rgba(2, 6, 23, 0.72);
   --pill-border: rgba(148, 163, 184, 0.25);
   --bg-elevated: #0b1120;
@@ -56,6 +58,7 @@
   --board-bg: radial-gradient(ellipse at 50% 40%, #ffffff 0, #f8fafc 55%, #eef2f7 100%);
   --board-border: rgba(100, 116, 139, 0.2);
   --board-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  --card-shade: rgba(15, 23, 42, 0.18);
   --pill-bg: rgba(255, 255, 255, 0.85);
   --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
@@ -196,9 +199,10 @@ body {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0.75rem 1.25rem;
-  /* A flung board card flies past the edge without making the page scroll
-     sideways (clip, unlike hidden, keeps the sticky nav bar working) */
-  overflow-x: clip;
+  /* A flung board card flies past the edge, and the share card waits below
+     it, without making the page scroll (clip, unlike hidden, keeps the
+     sticky nav bar working) */
+  overflow: clip;
 }
 
 .board-panel {
@@ -249,14 +253,6 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-}
-
-/* The share card's link and buttons stay normal to use */
-.share-card,
-.share-card * {
-  touch-action: manipulation;
-  user-select: text;
-  -webkit-user-select: text;
 }
 
 /* The top card tilts around a point below it while swiped, like a card
@@ -980,19 +976,21 @@ body {
 }
 
 /* --- Share card --- */
-/* Sits under the board card in the stack; revealed by swiping the board
-   card up (catan.js). The board card then parks its bottom
-   72px over the top of this card, hence the top padding. */
+/* Rises from below the screen over the board card when it's swiped up
+   (catan.js). Open, it sits a little lower than the board card, whose top
+   edge peeks above it. */
 
 .share-card {
   position: absolute;
-  inset: 0;
+  inset: 24px 0 0;
   height: auto;
-  z-index: 0;
-  padding: 84px 20px 20px;
+  z-index: 2;
+  padding: 32px 20px 20px;
+  will-change: transform;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   text-align: center;
 }
@@ -1038,24 +1036,6 @@ body {
   color: var(--text-muted);
 }
 
-.share-url {
-  width: 100%;
-  flex-shrink: 0;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-elevated-soft);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.85rem;
-  text-overflow: ellipsis;
-}
-
-.share-url:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 .share-actions {
   width: 100%;
   flex-shrink: 0;
@@ -1099,55 +1079,41 @@ body {
   z-index: 3;
 }
 
-/* Grab handle on the board card's parked strip */
+/* Grab handle at the top of the share card: pull down to put it away */
 .card-handle {
   position: absolute;
   left: 50%;
-  bottom: 5px;
+  top: 8px;
   width: 40px;
   height: 4px;
   margin-left: -20px;
   border-radius: 2px;
   background: var(--dot-past);
+}
+
+/* Dims the board card as it steps back behind the share card */
+.card-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--card-shade);
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  pointer-events: none;
 }
 
-.share-open .card-handle {
-  opacity: 1;
-}
-
-/* Board navigation is inert while the share card shows */
-.share-open .board-nav,
-.share-open .board-pager {
+/* Board navigation is inert while the share card shows; the pager, mostly
+   under the share card, goes */
+.share-open .board-nav {
   opacity: 0.35;
 }
 
-/* Board card being swiped up: bigger shadow, above the dimming page */
+.share-open .board-pager {
+  opacity: 0;
+}
+
+/* While the share card is out, it's above the pager it overlaps */
 .card-stack.is-lifted {
   z-index: 21;
-}
-
-#map-container.is-lifted {
-  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--board-border);
-}
-
-.lift-dim {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgba(2, 6, 23, 0.55);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease-out;
-}
-
-:root[data-theme="light"] .lift-dim {
-  background: rgba(15, 23, 42, 0.25);
-}
-
-.lift-dim.is-on {
-  opacity: 1;
 }
 
 /* Gesture hint pill over the pager's spot */
