@@ -800,9 +800,9 @@ function generate() {
     updateShareUrl();
     updateBalanceDisplay();
 
-    // History holds every board shown, with currentBoardIndex on the one on
-    // screen. Generating after going back drops the boards that were ahead.
-    boardHistory = boardHistory.slice(0, currentBoardIndex + 1);
+    // History holds every board generated this session, with
+    // currentBoardIndex on the one on screen. New boards always go on the
+    // end, so generating after going back keeps the boards that were ahead.
     boardHistory.push(snapshotBoard());
     currentBoardIndex = boardHistory.length - 1;
 
