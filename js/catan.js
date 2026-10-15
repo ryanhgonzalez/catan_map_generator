@@ -627,16 +627,20 @@ async function openShareCard(fromPose, velocityY) {
         apply({ x: 0, y: target, r: 0, s: 1 });
     } else {
         boardSliding = true;
-        const spring = runSpring({
+        const spring = playSpring(simulateSpring({
             from: from,
             to: { x: 0, y: target, r: 0, s: 1 },
             velocity: { y: (velocityY || 0) * 1000 },
             stiffness: 260,
-            damping: 29,
-            onFrame: apply
-        });
+            damping: 29
+        }), [{ el: card, style: (pose) => ({
+            transform: poseTransform(pose),
+            clipPath: clipTop(-target * (pose.y - from.y) / (target - from.y))
+        }) }]);
         activeMotion = spring;
         await spring.done;
+        apply({ x: 0, y: target, r: 0, s: 1 });
+        spring.cancel();
         activeMotion = null;
         boardSliding = false;
     }
@@ -659,19 +663,21 @@ async function closeShareCard(velocityY) {
     setBoardControlsInert(false);
     if (!motionReduced()) {
         boardSliding = true;
-        const spring = runSpring({
+        card.style.transform = "";
+        card.style.clipPath = "";
+        const spring = playSpring(simulateSpring({
             from: { y: parked },
             to: { y: 0 },
             velocity: { y: (velocityY || 0) * 1000 },
             stiffness: 300,
-            damping: 31,
-            onFrame: (pose) => {
-                card.style.transform = poseTransform(pose);
-                card.style.clipPath = clipTop(-parked * (pose.y / parked));
-            }
-        });
+            damping: 31
+        }), [{ el: card, style: (pose) => ({
+            transform: poseTransform(pose),
+            clipPath: clipTop(-parked * (pose.y / parked))
+        }) }]);
         activeMotion = spring;
         await spring.done;
+        spring.cancel();
         activeMotion = null;
         boardSliding = false;
     }
@@ -1060,13 +1066,18 @@ function poseTransform(pose) {
     return `translate(${pose.x || 0}px, ${pose.y || 0}px) rotate(${pose.r || 0}deg) scale(${pose.s === undefined ? 1 : pose.s})`;
 }
 
+// Spring motion is simulated up front and played as a keyframe animation,
+// so the browser runs it on its compositor at the display's full refresh
+// rate (120Hz on ProMotion iPhones, where frame-by-frame JavaScript is held
+// to 60Hz) and board drawing on the main thread can't stall it
+var SPRING_FPS = 120;
+
 /**
- * Run a damped spring (mass 1) on several values at once, calling onFrame
- * with the current values every animation frame until they settle on `to`.
- * velocity is per second; `until(values)` can end it early. Returns
- * {done, finish}: finish() jumps straight to `to`.
+ * Simulate a damped spring (mass 1) on several values at once and return
+ * their values every 1/120s until they settle on `to`, or `until(values)`
+ * says stop. velocity is per second.
  */
-function runSpring({ from, to, velocity = {}, stiffness = 300, damping = 26, onFrame, until }) {
+function simulateSpring({ from, to, velocity = {}, stiffness = 300, damping = 26, until }) {
     const keys = Object.keys(to);
     const value = {};
     const speed = {};
@@ -1076,53 +1087,47 @@ function runSpring({ from, to, velocity = {}, stiffness = 300, damping = 26, onF
     });
     // Scale-like values settle on a finer tolerance than px and degrees
     const fine = (k) => k === "s";
-    let frame = 0;
-    let last = null;
-    let ended = false;
-    let resolve;
-    const done = new Promise((r) => { resolve = r; });
-
-    const end = (jump) => {
-        if (ended) return;
-        ended = true;
-        cancelAnimationFrame(frame);
-        if (jump) {
-            keys.forEach((k) => { value[k] = to[k]; });
-            onFrame(value);
-        }
-        resolve();
-    };
-
-    const step = (now) => {
-        if (last === null) last = now;
-        let dt = Math.min(0.064, (now - last) / 1000);
-        last = now;
-        // Small fixed substeps keep stiff springs stable at any frame rate
-        while (dt > 0) {
-            const h = Math.min(dt, 0.004);
-            dt -= h;
+    const frames = [Object.assign({}, value)];
+    const step = 1 / SPRING_FPS;
+    for (let i = 0; i < SPRING_FPS * 2; i += 1) {
+        // Small substeps keep stiff springs stable
+        for (let sub = 0; sub < 2; sub += 1) {
             keys.forEach((k) => {
                 const accel = -stiffness * (value[k] - to[k]) - damping * speed[k];
-                speed[k] += accel * h;
-                value[k] += speed[k] * h;
+                speed[k] += accel * step / 2;
+                value[k] += speed[k] * step / 2;
             });
         }
-        onFrame(value);
-        if (until && until(value)) {
-            end(false);
-            return;
-        }
+        frames.push(Object.assign({}, value));
+        if (until && until(value)) return frames;
         const settled = keys.every((k) =>
             Math.abs(value[k] - to[k]) < (fine(k) ? 0.0005 : 0.3) &&
             Math.abs(speed[k]) < (fine(k) ? 0.005 : 3));
-        if (settled) {
-            end(true);
-            return;
-        }
-        frame = requestAnimationFrame(step);
+        if (settled) break;
+    }
+    frames[frames.length - 1] = Object.assign({}, to);
+    return frames;
+}
+
+/**
+ * Play simulated spring frames as keyframe animations on one or more
+ * elements: tracks are [{el, style(values) -> keyframe}]. Returns
+ * {done, finish, cancel}: finish() jumps to the end; cancel() drops the
+ * animations (call it once the final styles are set inline).
+ */
+function playSpring(frames, tracks) {
+    const duration = Math.max(1, (frames.length - 1) * 1000 / SPRING_FPS);
+    const anims = tracks.map((track) => track.el.animate(frames.map(track.style), {
+        duration: duration,
+        easing: "linear",
+        fill: "forwards"
+    }));
+    const done = Promise.all(anims.map((a) => a.finished)).then(() => {}, () => {});
+    return {
+        done: done,
+        finish: () => anims.forEach((a) => { try { a.finish(); } catch (err) { /* already done */ } }),
+        cancel: () => anims.forEach((a) => a.cancel())
     };
-    frame = requestAnimationFrame(step);
-    return { done: done, finish: () => end(true) };
 }
 
 // How far the card underneath has grown (0..1), for the swap
@@ -1180,44 +1185,53 @@ async function flingCard(direction, move, fromPose, velocity) {
     let skipSettle = false;
     let current = null;
 
+    const backStyle = (progress) => ({
+        transform: `scale(${0.94 + 0.06 * progress})`,
+        opacity: String(0.85 + 0.15 * progress)
+    });
+    const backAt = (pose) => Math.max(startBack, Math.min(1, Math.abs(pose.x) / (width * 0.85)));
+
     const run = (async () => {
-        current = runSpring({
+        const fly = simulateSpring({
             from: from,
             to: { x: direction * width * 2.4, y: from.y + v.y * 140, r: from.r + direction * 34, s: 1 },
             velocity: { x: vx, y: v.y * 400, r: vr },
             stiffness: 90,
             damping: 12,
-            onFrame: (pose) => {
-                card.style.transform = poseTransform(pose);
-                setBackCardProgress(Math.max(startBack, Math.min(1, Math.abs(pose.x) / (width * 0.85))));
-            },
             // Swap as soon as it's off the card area; no need to finish
             until: (pose) => Math.abs(pose.x) >= width * 1.2
         });
+        current = playSpring(fly, [
+            { el: card, style: (pose) => ({ transform: poseTransform(pose) }) },
+            { el: back, style: (pose) => backStyle(backAt(pose)) }
+        ]);
+        // The animations hold the positions from here on
+        card.style.transform = "";
         await current.done;
 
         // The top card now draws the board that was underneath, at the size
-        // the card underneath reached, then settles in gently. The
-        // settle is only cosmetic, so input is free again from here.
+        // the card underneath reached, then settles in gently. The settle
+        // is only cosmetic, so input is free again from here.
+        backProgress = backAt(fly[fly.length - 1]);
         const fromScale = 0.94 + 0.06 * backProgress;
         move.change();
+        current.cancel();
         hideBackCard();
         boardSliding = false;
         if (skipSettle) {
             card.style.transform = "";
             return;
         }
-        card.style.transform = poseTransform({ s: fromScale });
-        current = runSpring({
+        card.style.transform = "";
+        current = playSpring(simulateSpring({
             from: { s: fromScale },
             to: { s: 1 },
             velocity: { s: 0.15 },
             stiffness: 520,
-            damping: 40,
-            onFrame: (pose) => { card.style.transform = poseTransform(pose); }
-        });
+            damping: 40
+        }), [{ el: card, style: (pose) => ({ transform: poseTransform(pose) }) }]);
         await current.done;
-        card.style.transform = "";
+        current.cancel();
     })();
 
     activeMotion = {
@@ -1350,23 +1364,26 @@ function setUpBoardSwipe() {
             if (!shareOpen) share.hidden = true;
             return;
         }
-        const spring = runSpring({
+        const withBack = !wasUp && back.classList.contains("is-visible");
+        const tracks = [{ el: card, style: (p) => ({ transform: poseTransform(p) }) }];
+        if (withBack) {
+            tracks.push({ el: back, style: (p) => {
+                const progress = Math.min(1, Math.abs(p.x) / (width * 0.6));
+                return { transform: `scale(${0.94 + 0.06 * progress})`, opacity: String(0.85 + 0.15 * progress) };
+            } });
+        }
+        const spring = playSpring(simulateSpring({
             from: fromPose,
             to: { x: 0, y: 0, r: 0, s: 1 },
             velocity: { x: vel.x * 1000, y: vel.y * 1000 },
             stiffness: 340,
-            damping: 33,
-            onFrame: (p) => {
-                card.style.transform = poseTransform(p);
-                if (!wasUp && back.classList.contains("is-visible")) {
-                    setBackCardProgress(Math.min(1, Math.abs(p.x) / (width * 0.6)));
-                }
-            }
-        });
+            damping: 33
+        }), tracks);
+        card.style.transform = "";
         activeMotion = spring;
         spring.done.then(() => {
+            spring.cancel();
             if (activeMotion === spring) activeMotion = null;
-            card.style.transform = "";
             hideBackCard();
             if (wasUp && !shareOpen) share.hidden = true;
         });

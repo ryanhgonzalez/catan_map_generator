@@ -270,7 +270,10 @@ body {
   transform-origin: 50% 120%;
 }
 
-#map-container.is-dragging {
+/* Both cards keep their own compositor layers, so dragging, throwing and
+   settling move them without repainting the board or its shadow */
+#map-container,
+.map-back {
   will-change: transform;
 }
 
