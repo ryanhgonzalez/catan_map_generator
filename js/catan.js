@@ -719,6 +719,7 @@ function init() {
 
         setUpShareDialog();
         setUpBoardSwipe();
+        setUpPagerScrub();
 
         enableButtons();
 
@@ -1144,7 +1145,95 @@ function updatePager() {
     });
     pager.querySelector(".pager-index").textContent = current + 1;
     pager.querySelector(".pager-total").textContent = total;
+    pager.setAttribute("aria-valuemin", "1");
+    pager.setAttribute("aria-valuemax", String(total));
+    pager.setAttribute("aria-valuenow", String(current + 1));
+    pager.setAttribute("aria-valuetext", `Board ${current + 1} of ${total}`);
     pager.hidden = false;
+}
+
+// How long to hold the pager before scrubbing starts, in ms
+var PAGER_HOLD_MS = 250;
+
+/**
+ * Jump straight to a board in the session (no card animation), for
+ * scrubbing and the keyboard.
+ */
+function jumpToBoard(index) {
+    const target = Math.max(0, Math.min(boardHistory.length - 1, index));
+    if (target === currentBoardIndex) return;
+    currentBoardIndex = target;
+    loadBoardFromHistory(target);
+    enableButtons();
+}
+
+/**
+ * Press and hold the pager, then slide, to scrub through this session's
+ * boards like the iPhone home screen's page dots. Each step of finger
+ * travel is one board (smaller steps for long sessions), measured from
+ * where the hold began so the board doesn't jump when scrubbing starts.
+ * Arrow keys, Home and End do the same from the keyboard.
+ */
+function setUpPagerScrub() {
+    const pager = document.getElementById("board-pager");
+    let hold = null;
+    let scrub = null;
+
+    const stepPx = () => Math.max(8, Math.min(28, pager.clientWidth / boardHistory.length));
+
+    const stop = () => {
+        if (hold) clearTimeout(hold.timer);
+        hold = null;
+        scrub = null;
+        pager.classList.remove("is-scrubbing");
+    };
+
+    pager.addEventListener("pointerdown", (event) => {
+        if (!event.isPrimary || boardSliding || boardHistory.length < 2) return;
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        stop();
+        pager.setPointerCapture(event.pointerId);
+        const start = { x: event.clientX, id: event.pointerId };
+        hold = {
+            start: start,
+            timer: setTimeout(() => {
+                hold = null;
+                scrub = { x: start.x, id: start.id, index: currentBoardIndex };
+                pager.classList.add("is-scrubbing");
+                if (navigator.vibrate) navigator.vibrate(10);
+            }, PAGER_HOLD_MS)
+        };
+    });
+
+    pager.addEventListener("pointermove", (event) => {
+        // Moving before the hold completes cancels it
+        if (hold && event.pointerId === hold.start.id && Math.abs(event.clientX - hold.start.x) > 10) {
+            stop();
+            return;
+        }
+        if (!scrub || event.pointerId !== scrub.id) return;
+        jumpToBoard(scrub.index + Math.round((event.clientX - scrub.x) / stepPx()));
+    });
+
+    pager.addEventListener("pointerup", stop);
+    pager.addEventListener("pointercancel", stop);
+    // A long press shouldn't open a context menu or start selecting text
+    pager.addEventListener("contextmenu", (event) => event.preventDefault());
+
+    pager.addEventListener("keydown", (event) => {
+        if (boardSliding || boardHistory.length === 0) return;
+        const keys = {
+            ArrowLeft: currentBoardIndex - 1,
+            ArrowDown: currentBoardIndex - 1,
+            ArrowRight: currentBoardIndex + 1,
+            ArrowUp: currentBoardIndex + 1,
+            Home: 0,
+            End: boardHistory.length - 1
+        };
+        if (!(event.key in keys)) return;
+        event.preventDefault();
+        jumpToBoard(keys[event.key]);
+    });
 }
 
 function MapDefinition() {
