@@ -63,7 +63,8 @@ function $(selectorOrElement) {
 
 const THEME_STORAGE_KEY = "theme";
 const THEME_CHOICES = ["system", "light", "dark"];
-const THEME_COLORS = { dark: "#0f172a", light: "#ffffff" };
+// Match --page-top in the CSS so the browser bar blends into the page
+const THEME_COLORS = { dark: "#111827", light: "#ffffff" };
 const prefersLight = window.matchMedia("(prefers-color-scheme: light)");
 
 function getThemeChoice() {
