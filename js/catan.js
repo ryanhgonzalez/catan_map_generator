@@ -446,7 +446,7 @@ function decodeBoardShort(b64) {
 function loadBoardFromDecodedState(state) {
     if (!state || !Array.isArray(state.tiles)) return;
 
-    showBoardState(state);
+    showBoardState(state, true);
 
     // Start the game type switch on the shared board's type, so New board
     // keeps making boards like the one that was shared
@@ -506,13 +506,119 @@ function loadStateIntoMap(map, state) {
 /**
  * Put a board state on screen and in the URL.
  */
-function showBoardState(state) {
+function showBoardState(state, dropIn) {
     loadStateIntoMap(catanMap, state);
     sizeCanvas();
     catanMap.resize();
-    catanMap.draw();
     updateShareUrl();
     updateBalanceDisplay();
+    if (dropIn && !motionReduced()) {
+        dropInBoard();
+    } else {
+        catanMap.draw();
+    }
+}
+
+// ----- First board drop-in -----
+// A board shown on an empty card (opening the app, a shared link, or after
+// Clear all boards) is dealt onto it: the tiles drop from above in a ripple
+// out from the middle and land with a little bump, each number token pops
+// on once its tile has landed, the harbors fade in, then the score pill.
+
+// How long one tile takes to fall and land, and a token to pop on, in ms
+var TILE_DROP_MS = 420;
+var TOKEN_POP_MS = 260;
+// requestAnimationFrame id while a drop-in is running
+var dropFrame = null;
+
+/** Stop a drop-in (the caller draws the board in full). */
+function stopDropIn() {
+    if (dropFrame === null) return;
+    cancelAnimationFrame(dropFrame);
+    dropFrame = null;
+    document.getElementById("board-balance").style.opacity = "";
+}
+
+// A falling tile at progress p (0..1): it starts bigger (nearer) and a
+// little above its spot, speeds up as it falls, then gives a small bump as
+// it lands. Scale, y offset in tile sizes, and opacity.
+function tileDropLook(p) {
+    const fall = 0.7;
+    if (p < fall) {
+        const left = 1 - (p / fall) * (p / fall);
+        return { s: 1 + 0.45 * left, y: -0.35 * left, alpha: Math.min(1, 2.5 * p / fall) };
+    }
+    return { s: 1 - 0.06 * Math.sin(Math.PI * (p - fall) / (1 - fall)), y: 0, alpha: 1 };
+}
+
+// Ease out past the end and back, for the tokens popping on
+function backOut(p) {
+    const c = 1.7;
+    return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2);
+}
+
+/**
+ * Animate catanMap onto the empty canvas (see above). Any full draw of the
+ * board stops it; resizes carry on with it.
+ */
+function dropInBoard() {
+    stopDropIn();
+    const map = catanMap;
+    const tiles = map.hexTiles;
+    const pill = document.getElementById("board-balance");
+    pill.style.transition = "none";
+    pill.style.opacity = "0";
+
+    // Ripple out from the middle, a little uneven so it looks hand-dealt
+    const reach = tiles.map((tile) => Math.hypot(dx * tile.gridX, dy * tile.gridY));
+    const farthest = Math.max(1, ...reach);
+    const tileStart = reach.map((r) => 380 * r / farthest + 70 * Math.random());
+    const tokenStart = tileStart.map((t) => t + TILE_DROP_MS + 40);
+    const landed = Math.max(...tileStart) + TILE_DROP_MS;
+    const end = Math.max(...tokenStart) + TOKEN_POP_MS;
+
+    // Draw something about a point (scale and nudge), at an opacity
+    const around = (x, y, s, nudgeY, alpha, draw) => {
+        drawingContext.save();
+        drawingContext.globalAlpha = alpha;
+        drawingContext.translate(x, y + nudgeY);
+        drawingContext.scale(s, s);
+        drawingContext.translate(-x, -y);
+        draw();
+        drawingContext.restore();
+    };
+
+    const start = performance.now();
+    const frame = (now) => {
+        const t = now - start;
+        drawingContext.clear();
+        tiles.forEach((tile, i) => {
+            tile.xCenter = canvasCenterX + dx * tile.gridX;
+            tile.yCenter = canvasCenterY + dy * tile.gridY;
+            const p = (t - tileStart[i]) / TILE_DROP_MS;
+            if (p <= 0) return;
+            const look = tileDropLook(Math.min(1, p));
+            around(tile.xCenter, tile.yCenter, look.s, look.y * size, look.alpha, () => tile.drawBase());
+        });
+        const fade = Math.max(0, Math.min(1, (t - landed + 120) / 250));
+        if (showHarbors && fade > 0) around(0, 0, 1, 0, fade, () => map.drawHarbors());
+        if (showNumbers) {
+            tiles.forEach((tile, i) => {
+                const p = (t - tokenStart[i]) / TOKEN_POP_MS;
+                if (!tile.number || p <= 0) return;
+                around(tile.xCenter, tile.yCenter, backOut(Math.min(1, p)), 0, 1, () => tile.drawNumber());
+            });
+        }
+        if (t < end) {
+            dropFrame = requestAnimationFrame(frame);
+            return;
+        }
+        dropFrame = null;
+        map.draw();
+        pill.style.transition = "opacity 250ms ease-out";
+        pill.style.opacity = "";
+    };
+    dropFrame = requestAnimationFrame(frame);
 }
 
 /**
@@ -811,7 +917,8 @@ function watchCanvasSize() {
 		sizeCanvas();
 		if (catanMap.hexTiles) {
 			catanMap.resize();
-			catanMap.draw();
+			// A drop-in redraws every frame anyway
+			if (dropFrame === null) catanMap.draw();
 		}
 	}).observe(mapCanvas);
 }
@@ -884,19 +991,28 @@ function init() {
 
         enableButtons();
 
-        // If the URL has a board parameter, auto-load it (Option A)
+        hideLoadingState();
+
+        // Open on the shared board if the link has one, else a new board
         const url = new URL(window.location);
         const encodedBoard = url.searchParams.get('board');
-        if (encodedBoard) {
-            const boardState = decodeBoardShort(encodedBoard);
-            if (boardState) {
-                loadBoardFromDecodedState(boardState);
-                return; // We've loaded the shared board — skip automatic generation
-            }
+        const boardState = encodedBoard && decodeBoardShort(encodedBoard);
+        if (boardState) {
+            loadBoardFromDecodedState(boardState);
+        } else {
+            generate();
         }
-
-        // otherwise keep normal UI ready for the user
     });
+}
+
+// Fade out "Preparing your board…" as the first board drops in
+function hideLoadingState() {
+    const loading = document.getElementById("map-loading-state");
+    if (!loading) return;
+    loading.style.transition = "opacity 200ms ease-out";
+    loading.style.opacity = "0";
+    loading.style.pointerEvents = "none";
+    setTimeout(() => loading.remove(), 200);
 }
 
 function preloadImages(arr, callback){
@@ -978,7 +1094,8 @@ function generateBoardState() {
  * boards always go on the end, so going back never loses any.
  */
 function addBoardToHistory(state) {
-    showBoardState(state);
+    // The first board on the empty card drops in
+    showBoardState(state, boardHistory.length === 0);
     boardHistory.push(state);
     currentBoardIndex = boardHistory.length - 1;
     enableButtons();
@@ -2027,6 +2144,7 @@ CatanMap.prototype.setHarborTypes = function(types) {
 }
 CatanMap.prototype.draw = function() {
 
+	if (this === catanMap) stopDropIn();
 	if (this.hexTiles) {
 		drawingContext.clear();
 		for (var i = 0; i < this.hexTiles.length; i += 1) {

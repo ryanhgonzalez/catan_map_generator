@@ -200,22 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.boardHistory = [];
   window.currentBoardIndex = -1;
   
-  if (typeof init === "function") {
-    init();
-    
-    // Hide loading overlay after a brief delay to let first render complete
-    setTimeout(() => {
-      const mapLoading = document.getElementById("map-loading-state");
-      if (mapLoading) {
-        mapLoading.style.opacity = "0";
-        mapLoading.style.transition = "opacity 300ms ease-out";
-        mapLoading.style.pointerEvents = "none";
-        setTimeout(() => {
-          mapLoading.remove();
-        }, 300);
-      }
-    }, 500);
-  }
+  // catan.js hides the loading overlay once the first board is ready
+  if (typeof init === "function") init();
 });
 
 // Register the service worker for offline support (needs http(s), not file://)
