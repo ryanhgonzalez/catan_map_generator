@@ -627,7 +627,7 @@ async function openShareCard(fromPose, velocityY) {
         apply({ x: 0, y: target, r: 0, s: 1 });
     } else {
         boardSliding = true;
-        const spring = playSpring(simulateSpring({
+        const spring = playFrames(simulateSpring({
             from: from,
             to: { x: 0, y: target, r: 0, s: 1 },
             velocity: { y: (velocityY || 0) * 1000 },
@@ -665,7 +665,7 @@ async function closeShareCard(velocityY) {
         boardSliding = true;
         card.style.transform = "";
         card.style.clipPath = "";
-        const spring = playSpring(simulateSpring({
+        const spring = playFrames(simulateSpring({
             from: { y: parked },
             to: { y: 0 },
             velocity: { y: (velocityY || 0) * 1000 },
@@ -1066,7 +1066,7 @@ function poseTransform(pose) {
     return `translate(${pose.x || 0}px, ${pose.y || 0}px) rotate(${pose.r || 0}deg) scale(${pose.s === undefined ? 1 : pose.s})`;
 }
 
-// Spring motion is simulated up front and played as a keyframe animation,
+// Card motion is computed up front and played as a keyframe animation,
 // so the browser runs it on its compositor at the display's full refresh
 // rate (120Hz on ProMotion iPhones, where frame-by-frame JavaScript is held
 // to 60Hz) and board drawing on the main thread can't stall it
@@ -1074,10 +1074,10 @@ var SPRING_FPS = 120;
 
 /**
  * Simulate a damped spring (mass 1) on several values at once and return
- * their values every 1/120s until they settle on `to`, or `until(values)`
- * says stop. velocity is per second.
+ * their values every 1/120s until they settle on `to`. velocity is per
+ * second.
  */
-function simulateSpring({ from, to, velocity = {}, stiffness = 300, damping = 26, until }) {
+function simulateSpring({ from, to, velocity = {}, stiffness = 300, damping = 26 }) {
     const keys = Object.keys(to);
     const value = {};
     const speed = {};
@@ -1099,7 +1099,6 @@ function simulateSpring({ from, to, velocity = {}, stiffness = 300, damping = 26
             });
         }
         frames.push(Object.assign({}, value));
-        if (until && until(value)) return frames;
         const settled = keys.every((k) =>
             Math.abs(value[k] - to[k]) < (fine(k) ? 0.0005 : 0.3) &&
             Math.abs(speed[k]) < (fine(k) ? 0.005 : 3));
@@ -1142,12 +1141,13 @@ function throwFrames(from, direction, v, width) {
 }
 
 /**
- * Play simulated spring frames as keyframe animations on one or more
- * elements: tracks are [{el, style(values) -> keyframe}]. Returns
+ * Play precomputed motion frames (a spring or a throw path) as keyframe
+ * animations on one or more elements: tracks are
+ * [{el, style(values) -> keyframe}]. Returns
  * {done, finish, cancel}: finish() jumps to the end; cancel() drops the
  * animations (call it once the final styles are set inline).
  */
-function playSpring(frames, tracks) {
+function playFrames(frames, tracks) {
     const duration = Math.max(1, (frames.length - 1) * 1000 / SPRING_FPS);
     const anims = tracks.map((track) => track.el.animate(frames.map(track.style), {
         duration: duration,
@@ -1166,15 +1166,21 @@ function playSpring(frames, tracks) {
 var backProgress = 0;
 
 /**
- * Show the card underneath slightly smaller, growing to full size as the
- * top card moves away (progress 0..1). It starts nearly opaque so the next
- * board reads as already there, just behind.
+ * The card underneath's look for how far the top card has moved away
+ * (progress 0..1): slightly smaller, growing to full size, and nearly
+ * opaque throughout so the next board reads as already there, just behind.
  */
+function backCardStyle(progress) {
+    return {
+        transform: `scale(${0.94 + 0.06 * progress})`,
+        opacity: String(0.85 + 0.15 * progress)
+    };
+}
+
 function setBackCardProgress(progress) {
     const back = document.getElementById("map-back");
     backProgress = progress;
-    back.style.transform = `scale(${0.94 + 0.06 * progress})`;
-    back.style.opacity = String(0.85 + 0.15 * progress);
+    Object.assign(back.style, backCardStyle(progress));
 }
 
 function hideBackCard() {
@@ -1189,8 +1195,8 @@ function hideBackCard() {
  * Fling the top card off toward `direction` (1 = right, -1 = left) and make
  * `move` current. fromPose is where a swipe left the card and velocity its
  * speed at release ({x, y} px/ms): the card carries on at that speed and
- * glides fully off screen (throwFrames). Then the top card takes over the
- * next board and settles in.
+ * glides fully off screen (throwFrames), and the top card takes over the
+ * next board.
  */
 async function flingCard(direction, move, fromPose, velocity) {
     const card = document.getElementById("map-container");
@@ -1211,61 +1217,24 @@ async function flingCard(direction, move, fromPose, velocity) {
     const width = card.offsetWidth;
     const from = Object.assign({ x: 0, y: 0, r: 0, s: 1 }, fromPose);
     const v = velocity || { x: 0, y: 0 };
-    let skipSettle = false;
-    let current = null;
-
-    const backStyle = (progress) => ({
-        transform: `scale(${0.94 + 0.06 * progress})`,
-        opacity: String(0.85 + 0.15 * progress)
-    });
     // The next board grows to full size as the card clears the card area
     const backAt = (pose) => Math.max(startBack, Math.min(1, Math.abs(pose.x) / width));
+    // From a button there's no throw: give it a firm push to start
+    const throwV = fromPose ? v : { x: direction * 1.2, y: 0 };
+    const motion = playFrames(throwFrames(from, direction, throwV, width), [
+        { el: card, style: (pose) => ({ transform: poseTransform(pose) }) },
+        { el: back, style: (pose) => backCardStyle(backAt(pose)) }
+    ]);
+    // The animations hold the positions from here on
+    card.style.transform = "";
+    activeMotion = motion;
+    await motion.done;
 
-    const run = (async () => {
-        // From a button there's no throw: give it a firm push to start
-        const throwV = fromPose ? v : { x: direction * 1.2, y: 0 };
-        const fly = throwFrames(from, direction, throwV, width);
-        current = playSpring(fly, [
-            { el: card, style: (pose) => ({ transform: poseTransform(pose) }) },
-            { el: back, style: (pose) => backStyle(backAt(pose)) }
-        ]);
-        // The animations hold the positions from here on
-        card.style.transform = "";
-        await current.done;
-
-        // The top card now draws the board that was underneath, at the size
-        // the card underneath reached, then settles in gently. The settle
-        // is only cosmetic, so input is free again from here.
-        backProgress = backAt(fly[fly.length - 1]);
-        const fromScale = 0.94 + 0.06 * backProgress;
-        move.change();
-        current.cancel();
-        hideBackCard();
-        boardSliding = false;
-        if (skipSettle) {
-            card.style.transform = "";
-            return;
-        }
-        card.style.transform = "";
-        current = playSpring(simulateSpring({
-            from: { s: fromScale },
-            to: { s: 1 },
-            velocity: { s: 0.15 },
-            stiffness: 520,
-            damping: 40
-        }), [{ el: card, style: (pose) => ({ transform: poseTransform(pose) }) }]);
-        await current.done;
-        current.cancel();
-    })();
-
-    activeMotion = {
-        finish: () => {
-            skipSettle = true;
-            if (current) current.finish();
-        },
-        done: run
-    };
-    await run;
+    // The board underneath is full size by now: the top card draws it and
+    // comes back to the middle in the same task, so the swap never shows
+    move.change();
+    motion.cancel();
+    hideBackCard();
     activeMotion = null;
     boardSliding = false;
 }
@@ -1391,12 +1360,9 @@ function setUpBoardSwipe() {
         const withBack = !wasUp && back.classList.contains("is-visible");
         const tracks = [{ el: card, style: (p) => ({ transform: poseTransform(p) }) }];
         if (withBack) {
-            tracks.push({ el: back, style: (p) => {
-                const progress = Math.min(1, Math.abs(p.x) / (width * 0.6));
-                return { transform: `scale(${0.94 + 0.06 * progress})`, opacity: String(0.85 + 0.15 * progress) };
-            } });
+            tracks.push({ el: back, style: (p) => backCardStyle(Math.min(1, Math.abs(p.x) / (width * 0.6))) });
         }
-        const spring = playSpring(simulateSpring({
+        const spring = playFrames(simulateSpring({
             from: fromPose,
             to: { x: 0, y: 0, r: 0, s: 1 },
             velocity: { x: vel.x * 1000, y: vel.y * 1000 },
@@ -1446,7 +1412,6 @@ function setUpBoardSwipe() {
             if (Math.abs(moveX) < 6 && Math.abs(moveY) < 6) return;
             if (Math.abs(moveX) >= Math.abs(moveY)) {
                 mode = "x";
-                card.classList.add("is-dragging");
             } else if (moveY < 0) {
                 mode = "up";
                 beginUp();
@@ -1514,7 +1479,6 @@ function setUpBoardSwipe() {
         const fromPose = Object.assign({}, pose);
         reset();
         pose = { x: 0, y: 0, r: 0, s: 1 };
-        card.classList.remove("is-dragging");
 
         // Parked: a tap, a pull down or a downward flick goes back
         if (thisMode === "parked") {
