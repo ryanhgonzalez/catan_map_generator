@@ -237,12 +237,14 @@ body {
 
 /* Horizontal drags on the board are swipes (catan.js); vertical ones still
    scroll the page and pinch still zooms */
+/* One-finger drags on the board are all card gestures (catan.js): sideways
+   to change boards, up to share. Pinch still zooms. */
 .card-stack,
 .card-stack * {
-  touch-action: pan-y pinch-zoom;
+  touch-action: pinch-zoom;
 }
 
-/* Holding the card shouldn't select its text */
+/* Dragging the card shouldn't select its text */
 .card-stack {
   user-select: none;
   -webkit-user-select: none;
@@ -975,8 +977,8 @@ body {
 }
 
 /* --- Share card --- */
-/* Sits under the board card in the stack; revealed by holding the board
-   card and swiping it up (catan.js). The board card then parks its bottom
+/* Sits under the board card in the stack; revealed by swiping the board
+   card up (catan.js). The board card then parks its bottom
    72px over the top of this card, hence the top padding. */
 
 .share-card {
@@ -1118,7 +1120,7 @@ body {
   opacity: 0.35;
 }
 
-/* Held (lifted) board card: bigger shadow, above the dimmed page */
+/* Board card being swiped up: bigger shadow, above the dimming page */
 .card-stack.is-lifted {
   z-index: 21;
 }
@@ -1271,7 +1273,7 @@ body {
     padding-right: 1rem;
   }
 
-  /* On phones sharing is hold-and-swipe-up on the board (or Settings) */
+  /* On phones sharing is swiping the board up (or Settings) */
   #share-catan-board {
     display: none;
   }

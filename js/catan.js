@@ -547,7 +547,7 @@ function fillBalancePill(el, balance) {
 }
 
 // ----- Share card -----
-// Hold the board card, then swipe it up, to reveal a share card under it:
+// Swipe the board card up to reveal a share card under it:
 // the board's QR code (so a phone at the table can scan it), its link,
 // Copy link, and Share… where the Web Share API exists. The board card
 // parks with its bottom edge peeking above; tap or pull it down to go back.
@@ -555,8 +555,6 @@ function fillBalancePill(el, balance) {
 
 // How much of the board card stays visible when parked, in px
 var SHARE_PEEK_PX = 72;
-// How long to hold the board card before it lifts, in ms
-var CARD_HOLD_MS = 500;
 var shareOpen = false;
 
 /**
@@ -621,7 +619,7 @@ async function openShareCard(fromTransform) {
         await card.animate([
             { transform: fromTransform || "none", clipPath: UNPARKED_CLIP },
             parked
-        ], { duration: 320, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
+        ], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
         boardSliding = false;
     }
     card.style.transform = parked.transform;
@@ -642,7 +640,7 @@ async function closeShareCard() {
         await card.animate([
             parked,
             { transform: "none", clipPath: UNPARKED_CLIP }
-        ], { duration: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
+        ], { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }).finished;
         boardSliding = false;
     }
     share.hidden = true;
@@ -928,7 +926,7 @@ var SHARE_TIP_KEY = "shareTipShown";
 
 /**
  * The first time someone uses the app on a touch screen, point out the
- * hidden hold-to-share gesture for a few seconds.
+ * swipe-up-to-share gesture for a few seconds.
  */
 function maybeShowShareTip() {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
@@ -938,10 +936,10 @@ function maybeShowShareTip() {
     } catch (err) {
         return;
     }
-    setCardHint("Hold the board to share");
+    setCardHint("Swipe the board up to share");
     setTimeout(() => {
         const text = document.querySelector("#card-hint .card-hint-text").textContent;
-        if (text === "Hold the board to share") setCardHint(null);
+        if (text === "Swipe the board up to share") setCardHint(null);
     }, 4000);
 }
 
@@ -1030,7 +1028,30 @@ function tiltFor(offset) {
  * Fling the top card off toward `direction` (1 = right, -1 = left) and make
  * `move` current. fromX is where a swipe left the card (px).
  */
-async function flingCard(direction, move, fromX) {
+// The fling in progress, so a new swipe or tap can finish it instantly
+// instead of waiting: {anim, done}
+var activeFling = null;
+
+/**
+ * If a card is mid-fling, jump it to the end and wait for the swap, so the
+ * next action starts right away. Returns false if something else (the share
+ * card opening or closing) is animating.
+ */
+async function settleFling() {
+    if (activeFling) {
+        const pending = activeFling;
+        pending.anim.finish();
+        await pending.done;
+    }
+    return !boardSliding;
+}
+
+/**
+ * Fling the top card off toward `direction` (1 = right, -1 = left) and make
+ * `move` current. fromX is where a swipe left the card (px) and velocity
+ * its speed at release (px/ms): a flick flies off as fast as it was thrown.
+ */
+async function flingCard(direction, move, fromX, velocity) {
     const card = document.getElementById("map-container");
     if (motionReduced() || !card.animate) {
         card.style.transform = "";
@@ -1042,44 +1063,55 @@ async function flingCard(direction, move, fromX) {
     const back = document.getElementById("map-back");
     showOnBackCard(move.state);
     back.classList.add("is-visible");
+    // From a button there's no drag: start the next board already well in
+    // view so it appears quickly
+    if (!fromX) setBackCardProgress(0.5);
 
     const width = card.offsetWidth;
     const startX = fromX || 0;
+    const endX = direction * width * 1.3;
+    const speed = Math.max(Math.abs(velocity || 0), 2.4);
+    const duration = Math.max(110, Math.min(200, Math.abs(endX - startX) / speed));
+    const easing = "cubic-bezier(0.25, 0.8, 0.4, 1)";
     const fly = card.animate([
         { transform: `translateX(${startX}px) rotate(${tiltFor(startX)}deg)` },
-        { transform: `translateX(${direction * width * 1.4}px) rotate(${direction * 24}deg)` }
-    ], { duration: 280, easing: "cubic-bezier(0.4, 0, 0.6, 1)", fill: "forwards" });
+        { transform: `translateX(${endX}px) rotate(${direction * 20}deg)` }
+    ], { duration: duration, easing: easing, fill: "forwards" });
     // The animation holds the drag position from here on
     card.style.transform = "";
     const grow = back.animate([
         { transform: back.style.transform || "scale(0.94)", opacity: back.style.opacity || 0.55 },
         { transform: "scale(1)", opacity: 1 }
-    ], { duration: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" });
-    await fly.finished;
+    ], { duration: duration, easing: easing, fill: "forwards" });
 
-    // The top card now draws the board that was underneath, and comes back
+    // The top card then draws the board that was underneath and comes back
     // to the middle in the same task, so the swap never shows
-    move.change();
-    fly.cancel();
-    grow.cancel();
-    hideBackCard();
-    boardSliding = false;
+    const done = fly.finished.then(() => {
+        move.change();
+        fly.cancel();
+        grow.cancel();
+        hideBackCard();
+        boardSliding = false;
+        activeFling = null;
+    });
+    activeFling = { anim: fly, done: done };
+    await done;
 }
 
-function showPreviousBoard() {
-    if (boardSliding) return;
+async function showPreviousBoard() {
+    if (!(await settleFling())) return;
     const move = prepareMove("prev");
     if (move) flingCard(1, move);
 }
 
-function showNextBoard() {
-    if (boardSliding) return;
+async function showNextBoard() {
+    if (!(await settleFling())) return;
     const move = prepareMove("next");
     if (move) flingCard(-1, move);
 }
 
-function showNewBoard() {
-    if (boardSliding) return;
+async function showNewBoard() {
+    if (!(await settleFling())) return;
     // The very first board has no card to fling away
     if (!catanMap.hexTiles) {
         generate();
@@ -1088,17 +1120,24 @@ function showNewBoard() {
     flingCard(-1, prepareMove("new"));
 }
 
+// A release this fast (px/ms) commits a swipe even if it traveled less
+// than the distance threshold
+var FLICK_VELOCITY = 0.45;
+
 /**
- * Gestures on the board card:
- * - Drag left or right: it follows the finger and tilts, with the board
- *   you'd move to showing underneath. Past the threshold it flies off;
- *   otherwise it springs back. Swiping right on the first board resists.
- * - Hold still for CARD_HOLD_MS: the card lifts (the page dims). Then swipe
- *   up past a third of its height and release to reveal the share card.
- * - While the share card shows, tap or pull down the peeking strip to go
+ * Gestures on the board card. The first few pixels of movement pick the
+ * direction, then the card follows the finger 1:1:
+ * - Left or right: it tilts, with the board you'd move to showing
+ *   underneath. Past the threshold, or on a flick, it flies off; otherwise
+ *   it springs back. Swiping right on the first board resists.
+ * - Up: the page dims as it rises with the share card showing underneath.
+ *   Past a quarter of its height, or on an upward flick, it parks and
+ *   reveals the share card; otherwise it settles back.
+ * - While the share card shows: tap or pull down the peeking strip to go
  *   back.
- * Vertical drags that don't start with a hold are left to the page
- * (touch-action: pan-y).
+ * A new gesture during a fling finishes the fling at once. The card has
+ * touch-action: pinch-zoom, so one-finger drags are all ours (no page
+ * scroll on the card) and pinch still zooms.
  */
 function setUpBoardSwipe() {
     const card = document.getElementById("map-container");
@@ -1107,11 +1146,11 @@ function setUpBoardSwipe() {
     const share = document.getElementById("share-card");
     const dim = document.getElementById("lift-dim");
     let start = null;
-    let dragging = false;
+    // null until the direction is picked: "x", "up", "down" or "parked"
+    let mode = null;
     let offset = 0;
-    let holdTimer = null;
-    let lifted = false;
-    let liftY = 0;
+    let upY = 0;
+    let samples = [];
     // The move for the direction being dragged, prepared once per direction
     let kind = null;
     let move = null;
@@ -1121,95 +1160,109 @@ function setUpBoardSwipe() {
         ? "prev"
         : (currentBoardIndex < boardHistory.length - 1 ? "next" : "new");
 
-    const shareThreshold = () => card.offsetHeight / 3;
+    const shareThreshold = () => card.offsetHeight / 4;
+
+    // Release velocity from the last ~90ms of movement, in px/ms
+    const track = (event) => {
+        samples.push([event.timeStamp, event.clientX, event.clientY]);
+        while (samples.length > 2 && event.timeStamp - samples[0][0] > 90) samples.shift();
+    };
+    const velocity = () => {
+        if (samples.length < 2) return [0, 0];
+        const first = samples[0];
+        const last = samples[samples.length - 1];
+        const dt = Math.max(1, last[0] - first[0]);
+        return [(last[1] - first[1]) / dt, (last[2] - first[2]) / dt];
+    };
 
     const reset = () => {
-        clearTimeout(holdTimer);
-        holdTimer = null;
         start = null;
-        dragging = false;
+        mode = null;
         kind = null;
         move = null;
+        samples = [];
     };
 
-    const lift = () => {
-        holdTimer = null;
-        if (!start || boardSliding) return;
-        lifted = true;
-        liftY = 0;
-        // Fill the share card now, so it's complete as it comes into view
+    // Swipe up begins: lift the card over a dimming page, share card ready
+    const beginUp = () => {
         prepareShareCard();
-        card.setPointerCapture(start.id);
+        upY = 0;
         card.classList.add("is-lifted");
         stack.classList.add("is-lifted");
+        dim.style.transition = "none";
+        dim.style.opacity = "0";
         dim.classList.add("is-on");
-        setCardHint("Swipe up to share");
-        if (!motionReduced() && card.animate) {
-            card.animate([{ transform: "scale(1)" }, { transform: "scale(1.05)" }],
-                { duration: 160, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-        }
-        card.style.transform = "scale(1.05)";
-        if (navigator.vibrate) navigator.vibrate(12);
     };
 
-    // Let go of a lift without sharing: settle back down
-    const drop = (fromY) => {
-        lifted = false;
+    // Let go without sharing: settle back down from where the card is
+    const settleUp = (fromTransform) => {
         card.classList.remove("is-lifted");
         stack.classList.remove("is-lifted");
+        dim.style.transition = "";
+        dim.style.opacity = "";
         dim.classList.remove("is-on");
         setCardHint(null);
         card.style.transform = "";
         if (!motionReduced() && card.animate) {
             card.animate([
-                { transform: `translateY(${fromY}px) scale(1.05)` },
+                { transform: fromTransform || "none" },
                 { transform: "none" }
-            ], { duration: 240, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" })
+            ], { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" })
                 .finished.then(() => { if (!shareOpen) share.hidden = true; });
         } else {
             share.hidden = true;
         }
     };
 
-    card.addEventListener("pointerdown", (event) => {
-        if (!event.isPrimary || boardSliding || !catanMap.hexTiles) return;
+    // Listen on the stack, not the card: mid-fling the card has moved out
+    // from under the finger, but a new swipe should still catch it
+    stack.addEventListener("pointerdown", (event) => {
+        if (!event.isPrimary || !catanMap.hexTiles) return;
+        // With the share card showing, only the board card's peeking strip
+        // is a gesture; the share card's own buttons work normally
+        if (shareOpen && !card.contains(event.target)) return;
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        // Mid-fling: jump it to the end (the swap runs before the next
+        // pointermove) and start this gesture straight away
+        if (activeFling) activeFling.anim.finish();
+        else if (boardSliding) return;
         reset();
         start = { x: event.clientX, y: event.clientY, id: event.pointerId };
-        // A parked card only goes back down; no lifting or board swipes
-        if (!shareOpen) holdTimer = setTimeout(lift, CARD_HOLD_MS);
+        track(event);
+        if (shareOpen) mode = "parked";
     });
 
-    card.addEventListener("pointermove", (event) => {
+    stack.addEventListener("pointermove", (event) => {
         if (!start || event.pointerId !== start.id) return;
+        track(event);
         const moveX = event.clientX - start.x;
         const moveY = event.clientY - start.y;
+        if (mode === "parked" || mode === "down") return;
 
-        if (shareOpen) return;
-
-        if (lifted) {
-            // Only upward travel counts; the card follows the finger
-            liftY = Math.min(0, moveY);
-            card.style.transform = `translateY(${liftY}px) scale(1.05)`;
-            share.hidden = liftY > -6;
-            setCardHint(-liftY >= shareThreshold() ? "Release to share" : "Swipe up to share");
-            return;
-        }
-
-        if (!dragging) {
-            if (Math.abs(moveX) < 8 && Math.abs(moveY) < 8) return;
-            // Moving before the hold completes: not a lift
-            clearTimeout(holdTimer);
-            holdTimer = null;
-            if (Math.abs(moveX) < 8) return;
-            // Mostly vertical: not a swipe
-            if (Math.abs(moveY) > Math.abs(moveX)) {
-                start = null;
+        if (!mode) {
+            if (Math.abs(moveX) < 6 && Math.abs(moveY) < 6) return;
+            if (Math.abs(moveX) >= Math.abs(moveY)) {
+                mode = "x";
+                card.classList.add("is-dragging");
+            } else if (moveY < 0) {
+                mode = "up";
+                beginUp();
+            } else {
+                // Pulling the board down does nothing
+                mode = "down";
                 return;
             }
-            dragging = true;
-            card.setPointerCapture(event.pointerId);
-            card.classList.add("is-dragging");
+            stack.setPointerCapture(event.pointerId);
+        }
+
+        if (mode === "up") {
+            upY = Math.min(0, moveY);
+            const progress = Math.min(1, -upY / shareThreshold());
+            card.style.transform = `translateY(${upY}px) scale(${1 + 0.03 * progress})`;
+            dim.style.opacity = String(progress);
+            share.hidden = upY > -4;
+            setCardHint(progress >= 1 ? "Release to share" : "Swipe up to share");
+            return;
         }
 
         const wanted = kindFor(moveX > 0);
@@ -1230,46 +1283,53 @@ function setUpBoardSwipe() {
         if (move) setBackCardProgress(Math.min(1, Math.abs(offset) / (card.offsetWidth * 0.6)));
     });
 
-    // While lifted, stop the page scrolling under the finger (the card has
-    // touch-action: pan-y so ordinary vertical drags still scroll)
-    card.addEventListener("touchmove", (event) => {
-        if (lifted) event.preventDefault();
-    }, { passive: false });
-
     // A long press shouldn't open a context menu
-    card.addEventListener("contextmenu", (event) => event.preventDefault());
+    stack.addEventListener("contextmenu", (event) => {
+        if (!share.contains(event.target)) event.preventDefault();
+    });
 
     const finish = (event) => {
         if (!start || event.pointerId !== start.id) return;
-        const wasDragging = dragging;
+        track(event);
+        const released = event.type === "pointerup";
+        const [vx, vy] = velocity();
+        const travelX = event.clientX - start.x;
+        const travelY = event.clientY - start.y;
+        const thisMode = mode;
         const thisMove = move;
         const fromX = offset;
-        const travelY = event.clientY - start.y;
-        const travelX = event.clientX - start.x;
+        const fromY = upY;
+        const fromTransform = card.style.transform;
         reset();
         card.classList.remove("is-dragging");
 
-        // Parked: a tap or a pull down on the strip goes back to the board
-        if (shareOpen) {
+        // Parked: a tap, a pull down or a downward flick goes back
+        if (thisMode === "parked") {
             const tap = Math.abs(travelX) < 8 && Math.abs(travelY) < 8;
-            if (event.type === "pointerup" && (tap || travelY > 30)) closeShareCard();
+            if (released && (tap || travelY > 30 || vy > FLICK_VELOCITY)) closeShareCard();
             return;
         }
 
-        if (lifted) {
-            if (event.type === "pointerup" && -liftY >= shareThreshold()) {
-                lifted = false;
-                openShareCard(`translateY(${liftY}px) scale(1.05)`);
+        if (thisMode === "up") {
+            const flicked = vy < -FLICK_VELOCITY && -fromY > 24;
+            if (released && (-fromY >= shareThreshold() || flicked)) {
+                card.classList.remove("is-lifted");
+                stack.classList.remove("is-lifted");
+                dim.style.transition = "";
+                dim.style.opacity = "";
+                openShareCard(fromTransform);
             } else {
-                drop(liftY);
+                settleUp(fromTransform);
             }
             return;
         }
 
-        if (!wasDragging) return;
+        if (thisMode !== "x") return;
 
-        if (event.type === "pointerup" && thisMove && Math.abs(fromX) >= SWIPE_THRESHOLD_PX) {
-            flingCard(fromX > 0 ? 1 : -1, thisMove, fromX);
+        const flicked = Math.abs(vx) > FLICK_VELOCITY && Math.abs(fromX) > 24 &&
+            Math.sign(vx) === Math.sign(fromX);
+        if (released && thisMove && (Math.abs(fromX) >= SWIPE_THRESHOLD_PX || flicked)) {
+            flingCard(fromX > 0 ? 1 : -1, thisMove, fromX, vx);
             return;
         }
 
@@ -1280,11 +1340,11 @@ function setUpBoardSwipe() {
             card.animate([
                 { transform: `translateX(${fromX}px) rotate(${tiltFor(fromX)}deg)` },
                 { transform: "translateX(0) rotate(0deg)" }
-            ], { duration: 240, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+            ], { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
         }
     };
-    card.addEventListener("pointerup", finish);
-    card.addEventListener("pointercancel", finish);
+    stack.addEventListener("pointerup", finish);
+    stack.addEventListener("pointercancel", finish);
 }
 
 function goBack() {
