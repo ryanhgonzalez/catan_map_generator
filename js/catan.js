@@ -459,35 +459,35 @@ function loadBoardFromDecodedState(state) {
 }
 
 /**
- * Capture the board on screen as plain data for history and sharing.
+ * Capture a map's board as plain data for history and sharing.
  */
-function snapshotBoard() {
+function snapshotOf(map) {
     return {
-        tiles: catanMap.hexTiles.map(tile => ({
+        tiles: map.hexTiles.map(tile => ({
             resourceType: tile.resourceType,
             number: tile.number,
             gridX: tile.gridX,
             gridY: tile.gridY
         })),
-        harborTypes: catanMap.harbors.map(h => h.type)
+        harborTypes: map.harbors.map(h => h.type)
     };
 }
 
 /**
- * Put a board state ({tiles, harborTypes}) on screen and in the URL.
+ * Load a board state ({tiles, harborTypes}) into a map.
  */
-function showBoardState(state) {
+function loadStateIntoMap(map, state) {
     // Determine map type based on tile count. The game type switch is left
     // alone: it picks the type of the next generated board.
     if (state.tiles.length === normalMap.coordinatesArray.length) {
-        catanMap.defineMap(normalMap);
+        map.defineMap(normalMap);
     } else if (state.tiles.length === expandedMap.coordinatesArray.length) {
-        catanMap.defineMap(expandedMap);
+        map.defineMap(expandedMap);
     } else {
         console.warn("Unknown map size; cannot set map definition correctly.");
     }
 
-    catanMap.hexTiles = state.tiles.map(t => {
+    map.hexTiles = state.tiles.map(t => {
         const tile = new HexTile();
         tile.setCoordinate(t.gridX, t.gridY);
         tile.setResourceType(t.resourceType);
@@ -495,13 +495,19 @@ function showBoardState(state) {
         return tile;
     });
 
-    catanMap.coordToTile = {};
-    catanMap.hexTiles.forEach(tile => {
-        catanMap.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
+    map.coordToTile = {};
+    map.hexTiles.forEach(tile => {
+        map.coordToTile[[tile.gridX, tile.gridY].toString()] = tile;
     });
 
-    catanMap.setHarborTypes(state.harborTypes);
+    map.setHarborTypes(state.harborTypes);
+}
 
+/**
+ * Put a board state on screen and in the URL.
+ */
+function showBoardState(state) {
+    loadStateIntoMap(catanMap, state);
     sizeCanvas();
     catanMap.resize();
     catanMap.draw();
@@ -529,12 +535,15 @@ function updateBalanceDisplay() {
     const el = document.getElementById("board-balance");
     if (!el || !catanMap.hexTiles) return;
 
-    const balance = catanMap.getBalance();
+    fillBalancePill(el, catanMap.getBalance());
+    el.hidden = false;
+}
+
+function fillBalancePill(el, balance) {
     el.querySelector(".balance-score").textContent = balance.score + "/10";
     el.querySelector(".balance-label").textContent = balance.label;
     el.querySelector(".balance-reason").textContent = balance.reason;
     el.dataset.level = balance.label.toLowerCase();
-    el.hidden = false;
 }
 
 // ----- Share dialog -----
@@ -784,37 +793,45 @@ function loadImages(callback) {
 }
 
 function generate() {
-    // Generate a new board
-    var mapDef;
-    switch ($("input[name=game-type]:checked").val()) {
-        case "expanded":
-            mapDef = expandedMap;
-            break;
-        default:
-            mapDef = normalMap;
-    }
+    addBoardToHistory(generateBoardState());
+}
 
-    catanMap.defineMap(mapDef);
-    catanMap.generate();
-    catanMap.resize();
-    catanMap.draw();
-    updateShareUrl();
-    updateBalanceDisplay();
+/**
+ * Generate a board with the current game type and rules, without showing
+ * it (the swipe card shows it underneath before it's added).
+ */
+function generateBoardState() {
+    const mapDef = $("input[name=game-type]:checked").val() === "expanded"
+        ? expandedMap
+        : normalMap;
+    const map = new CatanMap();
+    map.defineMap(mapDef);
+    map.generate();
+    return snapshotOf(map);
+}
 
-    // History holds every board generated this session, with
-    // currentBoardIndex on the one on screen. New boards always go on the
-    // end, so generating after going back keeps the boards that were ahead.
-    boardHistory.push(snapshotBoard());
+/**
+ * Show a new board and add it to the session. History holds every board
+ * generated this session, with currentBoardIndex on the one on screen; new
+ * boards always go on the end, so going back never loses any.
+ */
+function addBoardToHistory(state) {
+    showBoardState(state);
+    boardHistory.push(state);
     currentBoardIndex = boardHistory.length - 1;
-
     enableButtons();
 }
 
-// ----- Board transitions and swipe -----
+// ----- Card swipe -----
+// The board card can be swiped like a deck of cards. A second card sits
+// under it showing the board you'd move to: dragging tilts the top card,
+// and past the threshold it flies off and the card underneath takes over.
+// Swipe right for the previous board; swipe left for the next one, or a
+// new one from the newest board. The buttons fling the card the same way.
 
 // How far a swipe must travel to change board, in px
-var SWIPE_THRESHOLD_PX = 60;
-// True while a board is sliding out/in; input waits for it to finish
+var SWIPE_THRESHOLD_PX = 80;
+// True while a card is flying off; input waits for it to finish
 var boardSliding = false;
 
 function motionReduced() {
@@ -822,81 +839,165 @@ function motionReduced() {
 }
 
 /**
- * Slide the board off toward `direction` (1 = right, to show an earlier
- * board; -1 = left, for a later or new one), run change() to draw the next
- * board, then slide that in from the other side. startOffset is where a
- * swipe left the board (px). Without motion, just changes the board.
+ * Where a move goes: "prev", "next" (an existing later board) or "new".
+ * Returns {state, change} with the board to show underneath and how to
+ * make it current, or null if there's no board that way.
  */
-async function slideBoard(direction, change, startOffset) {
-    if (motionReduced() || !mapCanvas.animate) {
-        mapCanvas.style.transform = "";
-        change();
+function prepareMove(kind) {
+    if (kind === "prev") {
+        if (currentBoardIndex <= 0) return null;
+        return { state: boardHistory[currentBoardIndex - 1], change: goBack };
+    }
+    if (kind === "next") {
+        if (currentBoardIndex >= boardHistory.length - 1) return null;
+        return { state: boardHistory[currentBoardIndex + 1], change: goForward };
+    }
+    const state = generateBoardState();
+    return { state: state, change: () => addBoardToHistory(state) };
+}
+
+/**
+ * Draw a board state onto the card underneath, with its balance pill.
+ * Drawing goes through globals (context, hex size), so they're swapped to
+ * a throwaway map and restored after.
+ */
+function showOnBackCard(state) {
+    const back = document.getElementById("map-back");
+    const canvas = back.querySelector("canvas");
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(canvas.clientWidth * dpr);
+    canvas.height = Math.round(canvas.clientHeight * dpr);
+
+    const map = new CatanMap();
+    loadStateIntoMap(map, state);
+
+    const saved = [drawingContext, size, dx, dy, lineWidth];
+    drawingContext = canvas.getContext("2d");
+    drawingContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+    map.resize();
+    map.draw();
+    [drawingContext, size, dx, dy, lineWidth] = saved;
+
+    fillBalancePill(back.querySelector(".board-balance"), map.getBalance());
+}
+
+/**
+ * Show the card underneath scaled down and dimmed, growing toward full
+ * size as the top card moves away (progress 0..1).
+ */
+function setBackCardProgress(progress) {
+    const back = document.getElementById("map-back");
+    back.style.transform = `scale(${0.94 + 0.06 * progress})`;
+    back.style.opacity = String(0.55 + 0.45 * progress);
+}
+
+function hideBackCard() {
+    const back = document.getElementById("map-back");
+    back.classList.remove("is-visible");
+    back.style.transform = "";
+    back.style.opacity = "";
+}
+
+// The top card's tilt for a horizontal offset (degrees, capped)
+function tiltFor(offset) {
+    return Math.max(-14, Math.min(14, offset * 0.06));
+}
+
+/**
+ * Fling the top card off toward `direction` (1 = right, -1 = left) and make
+ * `move` current. fromX is where a swipe left the card (px).
+ */
+async function flingCard(direction, move, fromX) {
+    const card = document.getElementById("map-container");
+    if (motionReduced() || !card.animate) {
+        card.style.transform = "";
+        hideBackCard();
+        move.change();
         return;
     }
     boardSliding = true;
-    const width = mapCanvas.clientWidth;
-    const out = mapCanvas.animate([
-        { transform: `translateX(${startOffset || 0}px)`, opacity: 1 },
-        { transform: `translateX(${direction * width * 0.6}px)`, opacity: 0 }
-    ], { duration: 140, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
-    // The animation holds the drag position from here on
-    mapCanvas.style.transform = "";
-    await out.finished;
+    const back = document.getElementById("map-back");
+    showOnBackCard(move.state);
+    back.classList.add("is-visible");
 
-    change();
-    // Cancel and start the next animation in the same task, so the new
-    // board never paints in the middle for a frame
-    out.cancel();
-    const into = mapCanvas.animate([
-        { transform: `translateX(${-direction * width * 0.4}px)`, opacity: 0 },
-        { transform: "translateX(0)", opacity: 1 }
-    ], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-    await into.finished;
+    const width = card.offsetWidth;
+    const startX = fromX || 0;
+    const fly = card.animate([
+        { transform: `translateX(${startX}px) rotate(${tiltFor(startX)}deg)` },
+        { transform: `translateX(${direction * width * 1.4}px) rotate(${direction * 24}deg)` }
+    ], { duration: 280, easing: "cubic-bezier(0.4, 0, 0.6, 1)", fill: "forwards" });
+    // The animation holds the drag position from here on
+    card.style.transform = "";
+    const grow = back.animate([
+        { transform: back.style.transform || "scale(0.94)", opacity: back.style.opacity || 0.55 },
+        { transform: "scale(1)", opacity: 1 }
+    ], { duration: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "forwards" });
+    await fly.finished;
+
+    // The top card now draws the board that was underneath, and comes back
+    // to the middle in the same task, so the swap never shows
+    move.change();
+    fly.cancel();
+    grow.cancel();
+    hideBackCard();
     boardSliding = false;
 }
 
-function showPreviousBoard(startOffset) {
-    if (boardSliding || currentBoardIndex <= 0) return;
-    slideBoard(1, goBack, startOffset);
+function showPreviousBoard() {
+    if (boardSliding) return;
+    const move = prepareMove("prev");
+    if (move) flingCard(1, move);
 }
 
-function showNextBoard(startOffset) {
-    if (boardSliding || currentBoardIndex >= boardHistory.length - 1) return;
-    slideBoard(-1, goForward, startOffset);
+function showNextBoard() {
+    if (boardSliding) return;
+    const move = prepareMove("next");
+    if (move) flingCard(-1, move);
 }
 
 function showNewBoard() {
     if (boardSliding) return;
-    // The very first board has nothing to slide away
+    // The very first board has no card to fling away
     if (!catanMap.hexTiles) {
         generate();
         return;
     }
-    slideBoard(-1, generate);
+    flingCard(-1, prepareMove("new"));
 }
 
 /**
- * Swipe the board left/right to step through this session's boards. The
- * board follows the finger, rubber-bands where there's no board to go to,
- * and snaps back on a short or cancelled swipe. Vertical drags are left to
- * the page (touch-action: pan-y in the CSS).
+ * Drag the card left or right: it follows the finger and tilts, with the
+ * board you'd move to showing underneath. Past the threshold it flies off;
+ * otherwise it springs back. Swiping right on the first board just
+ * resists. Vertical drags are left to the page (touch-action: pan-y).
  */
 function setUpBoardSwipe() {
     const card = document.getElementById("map-container");
+    const back = document.getElementById("map-back");
     let start = null;
     let dragging = false;
-    let dx = 0;
+    let offset = 0;
+    // The move for the direction being dragged, prepared once per direction
+    let kind = null;
+    let move = null;
 
-    const canGo = (towardRight) => towardRight
-        ? currentBoardIndex > 0
-        : currentBoardIndex < boardHistory.length - 1;
+    // Swiping right shows the previous board; left the next, else a new one
+    const kindFor = (towardRight) => towardRight
+        ? "prev"
+        : (currentBoardIndex < boardHistory.length - 1 ? "next" : "new");
+
+    const reset = () => {
+        start = null;
+        dragging = false;
+        kind = null;
+        move = null;
+    };
 
     card.addEventListener("pointerdown", (event) => {
         if (!event.isPrimary || boardSliding || !catanMap.hexTiles) return;
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        reset();
         start = { x: event.clientX, y: event.clientY, id: event.pointerId };
-        dragging = false;
-        dx = 0;
     });
 
     card.addEventListener("pointermove", (event) => {
@@ -912,36 +1013,49 @@ function setUpBoardSwipe() {
             }
             dragging = true;
             card.setPointerCapture(event.pointerId);
+            card.classList.add("is-dragging");
         }
-        dx = moveX;
+
+        const wanted = kindFor(moveX > 0);
+        if (wanted !== kind) {
+            kind = wanted;
+            move = prepareMove(kind);
+            if (move) {
+                showOnBackCard(move.state);
+                back.classList.add("is-visible");
+            } else {
+                hideBackCard();
+            }
+        }
+
         // Follow the finger, or resist where there's no board that way
-        const shown = canGo(dx > 0) ? dx : dx * 0.25;
-        mapCanvas.style.transform = `translateX(${shown}px)`;
+        offset = move ? moveX : moveX * 0.25;
+        card.style.transform = `translateX(${offset}px) rotate(${tiltFor(offset)}deg)`;
+        if (move) setBackCardProgress(Math.min(1, Math.abs(offset) / (card.offsetWidth * 0.6)));
     });
 
     const finish = (event) => {
         if (!start || event.pointerId !== start.id) return;
         const wasDragging = dragging;
-        start = null;
-        dragging = false;
+        const thisMove = move;
+        const fromX = offset;
+        reset();
+        card.classList.remove("is-dragging");
         if (!wasDragging) return;
 
-        const shown = canGo(dx > 0) ? dx : dx * 0.25;
-        const committed = event.type === "pointerup" &&
-            Math.abs(dx) >= SWIPE_THRESHOLD_PX && canGo(dx > 0);
-        if (committed && dx > 0) {
-            showPreviousBoard(shown);
-        } else if (committed) {
-            showNextBoard(shown);
-        } else {
-            // Spring back
-            mapCanvas.style.transform = "";
-            if (!motionReduced() && mapCanvas.animate) {
-                mapCanvas.animate([
-                    { transform: `translateX(${shown}px)` },
-                    { transform: "translateX(0)" }
-                ], { duration: 200, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-            }
+        if (event.type === "pointerup" && thisMove && Math.abs(fromX) >= SWIPE_THRESHOLD_PX) {
+            flingCard(fromX > 0 ? 1 : -1, thisMove, fromX);
+            return;
+        }
+
+        // Spring back
+        card.style.transform = "";
+        hideBackCard();
+        if (!motionReduced() && card.animate) {
+            card.animate([
+                { transform: `translateX(${fromX}px) rotate(${tiltFor(fromX)}deg)` },
+                { transform: "translateX(0) rotate(0deg)" }
+            ], { duration: 240, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
         }
     };
     card.addEventListener("pointerup", finish);

@@ -63,6 +63,17 @@
 
   <main class="app-main">
     <section class="board-panel" aria-label="Catan board">
+      <!-- A deck of two cards: swiping the top one shows the board underneath -->
+      <div class="card-stack">
+      <div id="map-back" class="map-container map-back" aria-hidden="true">
+        <canvas></canvas>
+        <p class="board-balance">
+          <strong class="balance-score"></strong>
+          <span class="balance-label"></span>
+          <span class="balance-reason"></span>
+        </p>
+      </div>
+
       <div id="map-container" class="map-container">
         <!-- Canvas is injected by catan.js via addCanvas() -->
         <div class="map-loading-state" id="map-loading-state">
@@ -77,6 +88,7 @@
           <span class="balance-label"></span>
           <span class="balance-reason"></span>
         </p>
+      </div>
       </div>
 
       <!-- Session pager: one dot per board generated this session -->
