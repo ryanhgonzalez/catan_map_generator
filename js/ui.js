@@ -194,6 +194,70 @@ document.addEventListener("DOMContentLoaded", () => {
   setUpDialogClosing(dialog);
 });
 
+// ----- Rules page -----
+// Opened from the book button in the header, laid out like Settings.
+// Searching shows only the entries that match, in their sections, with the
+// matches highlighted.
+
+/** Set an element's text, wrapping each match of query in <mark>. */
+function highlightText(element, text, query) {
+  element.replaceChildren();
+  if (!query) {
+    element.textContent = text;
+    return;
+  }
+  const lower = text.toLowerCase();
+  let from = 0;
+  let at = lower.indexOf(query);
+  while (at !== -1) {
+    element.append(text.slice(from, at));
+    const mark = document.createElement("mark");
+    mark.textContent = text.slice(at, at + query.length);
+    element.append(mark);
+    from = at + query.length;
+    at = lower.indexOf(query, from);
+  }
+  element.append(text.slice(from));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dialog = document.getElementById("rules-dialog");
+  const search = document.getElementById("rules-search");
+  const empty = document.getElementById("rules-empty");
+  const sections = Array.from(dialog.querySelectorAll(".rules-section"));
+  // Each entry's heading and text, kept to search and re-highlight
+  const entries = Array.from(dialog.querySelectorAll(".rules-entry")).map((entry) => ({
+    entry: entry,
+    section: entry.closest(".rules-section"),
+    parts: Array.from(entry.querySelectorAll("h4, p")).map((el) => ({ el: el, text: el.textContent }))
+  }));
+
+  $("#rules-button").click(() => dialog.showModal());
+  $("#rules-close").click(() => closeDialog(dialog));
+  setUpDialogClosing(dialog);
+
+  search.addEventListener("input", () => {
+    const query = search.value.trim().toLowerCase();
+    dialog.classList.toggle("is-searching", query !== "");
+    let found = 0;
+    entries.forEach((item) => {
+      const match = !query ||
+        item.parts.some((part) => part.text.toLowerCase().includes(query));
+      item.entry.hidden = !match;
+      if (match && query) found += 1;
+      item.parts.forEach((part) => highlightText(part.el, part.text, match ? query : ""));
+    });
+    // Sections with matches open; the rest hide. Cleared, all close again.
+    sections.forEach((section) => {
+      const hasMatch = entries.some((item) => item.section === section && !item.entry.hidden);
+      section.hidden = query !== "" && !hasMatch;
+      section.open = query !== "" && hasMatch;
+    });
+    empty.hidden = !query || found > 0;
+    empty.textContent = `No rules match “${search.value.trim()}”.`;
+  });
+});
+
 // When DOM is ready, run the existing init() from catan.js
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize board history

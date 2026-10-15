@@ -1152,6 +1152,214 @@ body {
   visibility: hidden;
 }
 
+
+/* --- Rules page --- */
+/* The Settings page/panel (same dialog styles), with a search box, links
+   to the official rulebooks, building costs and collapsible sections */
+
+.rules-heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rules-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.rules-search {
+  flex-shrink: 0;
+  height: 46px;
+  padding: 0 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.rules-search:focus-within {
+  border-color: var(--accent);
+}
+
+.rules-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  /* 16px or more, so iOS doesn't zoom in on focus */
+  font-size: 1rem;
+}
+
+.rules-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.rules-dialog.is-searching .rules-intro {
+  display: none;
+}
+
+.rules-dialog a.settings-row-button {
+  text-decoration: none;
+}
+
+.rules-dialog a.settings-row-button + a.settings-row-button {
+  border-top: 1px solid var(--divider);
+}
+
+/* Building costs, the thing looked up most at the table */
+.rules-costs {
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+}
+
+.rules-costs .settings-section-title {
+  margin: 0;
+}
+
+.cost-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.cost-name {
+  font-size: 0.95rem;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+
+.cost-name small {
+  margin-left: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cost-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+/* Resource colors, white text in either theme */
+.cost-chip {
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cost-brick { background: #b45309; }
+.cost-lumber { background: #15803d; }
+.cost-wool { background: #65a30d; }
+.cost-grain { background: #ca8a04; }
+.cost-ore { background: #64748b; }
+
+.rules-list {
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.rules-section + .rules-section {
+  border-top: 1px solid var(--divider);
+}
+
+.rules-section summary {
+  min-height: 52px;
+  padding: 0 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rules-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules-section summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.rules-section-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.rules-count {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.rules-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.rules-section[open] .rules-chevron {
+  transform: rotate(90deg);
+}
+
+.rules-entries {
+  padding: 0 0.9rem 0.4rem;
+}
+
+.rules-entry {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--divider);
+}
+
+.rules-entry h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+
+.rules-entry p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* Search matches */
+.rules-entry mark {
+  border-radius: 3px;
+  background: rgba(249, 115, 22, 0.32);
+  color: inherit;
+}
+
+.rules-empty {
+  margin: 0 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
 /* --- Dialog transitions --- */
 /* Opening animates from CSS alone. Closing adds .is-closing first and
    closeDialog() in ui.js waits for the exit animation before closing. */
