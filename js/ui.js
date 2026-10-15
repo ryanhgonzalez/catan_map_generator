@@ -199,6 +199,39 @@ document.addEventListener("DOMContentLoaded", () => {
 // Searching shows only the entries that match, in their sections, with the
 // matches highlighted.
 
+/**
+ * Open or close a rules section, sliding its entries open or shut (from
+ * wherever they are, if it's mid-slide). <details> alone just snaps.
+ */
+function toggleRulesSection(section, opening) {
+  const body = section.querySelector(".rules-entries");
+  section.classList.toggle("is-expanded", opening);
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Mid-slide: start from the height it's at now
+  const from = section.open ? body.getBoundingClientRect().height : 0;
+  if (section.slide) section.slide.cancel();
+  section.open = true;
+  const to = opening ? body.scrollHeight : 0;
+  if (reduced) {
+    section.open = opening;
+    return;
+  }
+  body.style.overflow = "hidden";
+  const slide = body.animate([
+    { height: `${from}px`, opacity: opening ? 0.4 : 1 },
+    { height: `${to}px`, opacity: opening ? 1 : 0 }
+  ], {
+    duration: opening ? 320 : 260,
+    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)"
+  });
+  section.slide = slide;
+  slide.onfinish = () => {
+    section.slide = null;
+    body.style.overflow = "";
+    section.open = opening;
+  };
+}
+
 /** Set an element's text, wrapping each match of query in <mark>. */
 function highlightText(element, text, query) {
   element.replaceChildren();
@@ -232,6 +265,14 @@ document.addEventListener("DOMContentLoaded", () => {
     parts: Array.from(entry.querySelectorAll("h4, p")).map((el) => ({ el: el, text: el.textContent }))
   }));
 
+  // Sections slide open and shut instead of snapping
+  sections.forEach((section) => {
+    section.querySelector("summary").addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleRulesSection(section, !section.classList.contains("is-expanded"));
+    });
+  });
+
   $("#rules-button").click(() => dialog.showModal());
   $("#rules-close").click(() => closeDialog(dialog));
   setUpDialogClosing(dialog);
@@ -250,8 +291,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Sections with matches open; the rest hide. Cleared, all close again.
     sections.forEach((section) => {
       const hasMatch = entries.some((item) => item.section === section && !item.entry.hidden);
+      // Drop any slide in progress (cancel, unlike finish, skips its end)
+      if (section.slide) {
+        section.slide.cancel();
+        section.slide = null;
+        section.querySelector(".rules-entries").style.overflow = "";
+      }
       section.hidden = query !== "" && !hasMatch;
       section.open = query !== "" && hasMatch;
+      section.classList.toggle("is-expanded", section.open);
     });
     empty.hidden = !query || found > 0;
     empty.textContent = `No rules match “${search.value.trim()}”.`;
