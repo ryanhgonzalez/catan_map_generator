@@ -1110,6 +1110,38 @@ function simulateSpring({ from, to, velocity = {}, stiffness = 300, damping = 26
 }
 
 /**
+ * The path of a thrown card, as 120fps frames {x, y, r, s}. It leaves at
+ * exactly the release velocity (no jump in speed) and accelerates, or eases
+ * for a hard flick, at a constant rate until it's fully off screen, over
+ * 170-280ms depending on how hard it was thrown, so the eye can follow it.
+ * It keeps tilting as it goes. v is the release velocity in px/ms.
+ */
+function throwFrames(from, direction, v, width) {
+    // Far enough that the tilted card has fully left the screen
+    const exitX = direction * width * 1.45;
+    const distance = Math.abs(exitX - from.x);
+    const duration = Math.max(170, Math.min(280, distance / Math.max(direction * v.x, 2)));
+    // Speed along the throw at release; capped so a huge flick still ends
+    // moving outward rather than doubling back
+    const v0 = Math.min(Math.max(0, direction * v.x), 2 * distance / duration);
+    const accel = 2 * (distance - v0 * duration) / (duration * duration);
+    const extraTilt = 16;
+    const frames = [];
+    const count = Math.max(2, Math.ceil(duration * SPRING_FPS / 1000));
+    for (let i = 0; i <= count; i += 1) {
+        const t = duration * i / count;
+        const travel = v0 * t + 0.5 * accel * t * t;
+        frames.push({
+            x: from.x + direction * travel,
+            y: from.y + v.y * t * 0.6,
+            r: from.r + direction * extraTilt * (travel / distance),
+            s: 1
+        });
+    }
+    return frames;
+}
+
+/**
  * Play simulated spring frames as keyframe animations on one or more
  * elements: tracks are [{el, style(values) -> keyframe}]. Returns
  * {done, finish, cancel}: finish() jumps to the end; cancel() drops the
@@ -1156,8 +1188,9 @@ function hideBackCard() {
 /**
  * Fling the top card off toward `direction` (1 = right, -1 = left) and make
  * `move` current. fromPose is where a swipe left the card and velocity its
- * speed at release ({x, y} px/ms): the card carries on as thrown. Then the
- * top card takes over the next board and settles in.
+ * speed at release ({x, y} px/ms): the card carries on at that speed and
+ * glides fully off screen (throwFrames). Then the top card takes over the
+ * next board and settles in.
  */
 async function flingCard(direction, move, fromPose, velocity) {
     const card = document.getElementById("map-container");
@@ -1178,10 +1211,6 @@ async function flingCard(direction, move, fromPose, velocity) {
     const width = card.offsetWidth;
     const from = Object.assign({ x: 0, y: 0, r: 0, s: 1 }, fromPose);
     const v = velocity || { x: 0, y: 0 };
-    // At least a firm push in the swipe direction (px/s), plus spin from
-    // the throw
-    const vx = direction * Math.max(Math.abs(v.x), 1.4) * 1000;
-    const vr = Math.max(-340, Math.min(340, vx * 0.08));
     let skipSettle = false;
     let current = null;
 
@@ -1189,18 +1218,13 @@ async function flingCard(direction, move, fromPose, velocity) {
         transform: `scale(${0.94 + 0.06 * progress})`,
         opacity: String(0.85 + 0.15 * progress)
     });
-    const backAt = (pose) => Math.max(startBack, Math.min(1, Math.abs(pose.x) / (width * 0.85)));
+    // The next board grows to full size as the card clears the card area
+    const backAt = (pose) => Math.max(startBack, Math.min(1, Math.abs(pose.x) / width));
 
     const run = (async () => {
-        const fly = simulateSpring({
-            from: from,
-            to: { x: direction * width * 2.4, y: from.y + v.y * 140, r: from.r + direction * 34, s: 1 },
-            velocity: { x: vx, y: v.y * 400, r: vr },
-            stiffness: 90,
-            damping: 12,
-            // Swap as soon as it's off the card area; no need to finish
-            until: (pose) => Math.abs(pose.x) >= width * 1.2
-        });
+        // From a button there's no throw: give it a firm push to start
+        const throwV = fromPose ? v : { x: direction * 1.2, y: 0 };
+        const fly = throwFrames(from, direction, throwV, width);
         current = playSpring(fly, [
             { el: card, style: (pose) => ({ transform: poseTransform(pose) }) },
             { el: back, style: (pose) => backStyle(backAt(pose)) }
