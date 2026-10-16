@@ -374,262 +374,720 @@
       <input id="rules-search" type="search" placeholder="Search the rules" autocomplete="off" />
     </label>
 
-    <!-- Hidden while searching -->
-    <div class="rules-intro">
-      <div class="settings-group">
-        <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2021-06/catan_base_rules_2020_200707.pdf" target="_blank" rel="noopener">
-          <span class="switch-text">Official rulebook<small>Game Rules &amp; Almanac · PDF on catan.com</small></span>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
-        </a>
-        <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2024-03/Catan%20Game%205-6%20Rules%202022%20240313.pdf" target="_blank" rel="noopener">
-          <span class="switch-text">5–6 player rules<small>Extension rules · PDF on catan.com</small></span>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
-        </a>
-      </div>
-
-      <section class="rules-costs" aria-labelledby="costs-title">
-        <h3 id="costs-title" class="settings-section-title">Building costs</h3>
-        <div class="cost-row">
-          <span class="cost-name">Road</span>
-          <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span></span>
-        </div>
-        <div class="cost-row">
-          <span class="cost-name">Settlement <small>1 pt</small></span>
-          <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-grain">Grain</span></span>
-        </div>
-        <div class="cost-row">
-          <span class="cost-name">City <small>2 pts</small></span>
-          <span class="cost-chips"><span class="cost-chip cost-grain">2× Grain</span><span class="cost-chip cost-ore">3× Ore</span></span>
-        </div>
-        <div class="cost-row">
-          <span class="cost-name">Dev card</span>
-          <span class="cost-chips"><span class="cost-chip cost-ore">Ore</span><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-grain">Grain</span></span>
-        </div>
-      </section>
+    <!-- Which game's rules -->
+    <div class="segmented rules-games" role="radiogroup" aria-label="Game">
+      <label class="segment">
+        <input type="radio" name="rules-game" value="base" checked />
+        <span>Base game</span>
+      </label>
+      <label class="segment">
+        <input type="radio" name="rules-game" value="ck" />
+        <span>Cities &amp; Knights</span>
+      </label>
     </div>
 
-    <div class="rules-list">
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Setup</span>
-          <span class="rules-count">5</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Who goes first</h4>
-            <p>Everyone rolls both dice; the highest roll starts.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>Placing your first pieces</h4>
-            <p>In turn order, each player places a settlement and a road touching it. Then the last player goes again and play runs back the other way, so each player places a second settlement and road.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>Your second settlement</h4>
-            <p>It can go anywhere the distance rule allows and doesn’t need to connect to your first. Its road must touch it.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>Starting resources</h4>
-            <p>Take 1 resource for each land hex touching your second settlement. The last player to place their second settlement takes the first turn.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>The robber</h4>
-            <p>It starts the game on the desert.</p>
-          </div>
+    <div class="rules-game" data-game="base">
+      <!-- Hidden while searching -->
+      <div class="rules-intro">
+        <div class="settings-group">
+          <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2021-06/catan_base_rules_2020_200707.pdf" target="_blank" rel="noopener">
+            <span class="switch-text">Official rulebook<small>Game Rules &amp; Almanac · PDF on catan.com</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
+          <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2024-03/Catan%20Game%205-6%20Rules%202022%20240313.pdf" target="_blank" rel="noopener">
+            <span class="switch-text">5–6 player rules<small>Extension rules · PDF on catan.com</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
         </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">A turn</span>
-          <span class="rules-count">4</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Roll for resources</h4>
-            <p>Roll both dice. Every settlement next to a hex showing that number collects 1 of its resource, and every city collects 2. The hex with the robber produces nothing.</p>
+
+        <section class="rules-costs" aria-label="Base game building costs">
+          <h3 class="settings-section-title">Building costs</h3>
+          <div class="cost-row">
+            <span class="cost-name">Road</span>
+            <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Trade, then build</h4>
-            <p>After rolling, trade, then build. Once everyone knows the game, the rulebook suggests combining the two: trade and build in any order, as often as you like.</p>
+          <div class="cost-row">
+            <span class="cost-name">Settlement <small>1 pt</small></span>
+            <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-grain">Grain</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>One development card</h4>
-            <p>Play at most 1 per turn, at any point in your turn, even before you roll. It can’t be one you bought this turn.</p>
+          <div class="cost-row">
+            <span class="cost-name">City <small>2 pts</small></span>
+            <span class="cost-chips"><span class="cost-chip cost-grain">2× Grain</span><span class="cost-chip cost-ore">3× Ore</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>When the bank runs out</h4>
-            <p>If there aren’t enough of a resource for everyone it’s owed to, no one gets that resource this turn. If only one player is owed it, they take what’s left.</p>
+          <div class="cost-row">
+            <span class="cost-name">Dev card</span>
+            <span class="cost-chips"><span class="cost-chip cost-ore">Ore</span><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-grain">Grain</span></span>
           </div>
+        </section>
+      </div>
+
+      <div class="rules-list">
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Setup</span>
+            <span class="rules-count">5</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Who goes first</h4>
+              <p>Everyone rolls both dice; the highest roll starts.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Placing your first pieces</h4>
+              <p>In turn order, each player places a settlement and a road touching it. Then the last player goes again and play runs back the other way, so each player places a second settlement and road.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Your second settlement</h4>
+              <p>It can go anywhere the distance rule allows and doesn’t need to connect to your first. Its road must touch it.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Starting resources</h4>
+              <p>Take 1 resource for each land hex touching your second settlement. The last player to place their second settlement takes the first turn.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>The robber</h4>
+              <p>It starts the game on the desert.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">A turn</span>
+            <span class="rules-count">4</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Roll for resources</h4>
+              <p>Roll both dice. Every settlement next to a hex showing that number collects 1 of its resource, and every city collects 2. The hex with the robber produces nothing.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Trade, then build</h4>
+              <p>After rolling, trade, then build. Once everyone knows the game, the rulebook suggests combining the two: trade and build in any order, as often as you like.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>One development card</h4>
+              <p>Play at most 1 per turn, at any point in your turn, even before you roll. It can’t be one you bought this turn.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>When the bank runs out</h4>
+              <p>If there aren’t enough of a resource for everyone it’s owed to, no one gets that resource this turn. If only one player is owed it, they take what’s left.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Building</span>
+            <span class="rules-count">6</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Your pieces</h4>
+              <p>Each player has 15 roads, 5 settlements and 4 cities, and can’t build more than that.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Roads</h4>
+              <p>One road per edge. A new road must join one of your roads, settlements or cities.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Settlements</h4>
+              <p>Built on an empty corner touching one of your roads, following the distance rule. Worth 1 point.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Distance rule</h4>
+              <p>None of the 3 corners next to a settlement can have a settlement or city on it, yours included.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Cities</h4>
+              <p>Upgrade one of your settlements; the settlement goes back to your supply. Worth 2 points, and collects 2 resources per roll.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Development cards</h4>
+              <p>Take the top card and keep it hidden. Used cards never go back into the deck.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Development cards</span>
+            <span class="rules-count">5</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Knight</h4>
+              <p>Move the robber and steal, just as on a 7. Played knights stay face up in front of you and count toward Largest Army. There are 14.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Road Building</h4>
+              <p>Place 2 roads for free, following the usual rules.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Year of Plenty</h4>
+              <p>Take any 2 resources from the bank. You can use them this turn.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Monopoly</h4>
+              <p>Name a resource. Every other player gives you all of that resource they hold.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Victory Point</h4>
+              <p>Worth 1 point; keep it hidden. Reveal your Victory Point cards when they take you to 10 on your turn, even the turn you bought one. There are 5.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">The robber</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Rolling a 7</h4>
+              <p>No one collects resources. Anyone holding more than 7 resource cards (8 or more) discards half of them, rounded down.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Moving the robber</h4>
+              <p>Whoever rolled must move it to a different hex (the desert counts), then steals 1 random resource from a player with a settlement or city on that hex. If there are several, they choose who.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>A blocked hex</h4>
+              <p>The hex under the robber produces nothing until the robber moves again.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Trading</span>
+            <span class="rules-count">4</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>With other players</h4>
+              <p>On your turn, trade with anyone, on any terms you agree. You must be part of every trade; other players can’t trade with each other.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Not allowed</h4>
+              <p>Giving cards away, trading like for like (say, 3 ore for 1 ore), trading development cards, or trading with the bank on someone else’s turn.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>With the bank</h4>
+              <p>On your turn, trade 4 of one resource for 1 of any other, harbor or not.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Harbors</h4>
+              <p>With a settlement or city on a harbor: at a 3:1 harbor trade 3 of a kind for 1 of any other; at a 2:1 harbor trade 2 of its pictured resource for 1 of any other.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Longest Road &amp; Largest Army</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Longest Road</h4>
+              <p>The first player with a continuous road of 5 or more segments takes this card, worth 2 points. Only the single longest branch counts. A player who builds a longer road takes it away.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Breaking a road</h4>
+              <p>A settlement built on an empty corner along someone’s road splits it. If the holder is still tied for longest, they keep the card. If others tie for longest, or no one has 5 or more, the card is set aside until one player has the longest.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Largest Army</h4>
+              <p>The first player with 3 knights face up takes this card, worth 2 points. A player with more knights face up takes it away.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Winning</span>
+            <span class="rules-count">2</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>10 points on your turn</h4>
+              <p>Reach 10 points during your own turn and you win at once. If you get there on someone else’s turn, you win once your turn comes.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Points</h4>
+              <p>Settlement 1, city 2, Longest Road 2, Largest Army 2, and 1 for each Victory Point card.</p>
+            </div>
+          </div>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">5–6 players</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Paired turns</h4>
+              <p>The starting player is player 1, and the third player to their left is player 2. Player 1 rolls and takes a full turn. Then player 2 builds, trades with the bank only, and may play a development card. Then both pass their markers to the left.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>If both reach 10</h4>
+              <p>Player 1 wins.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Older boxes</h4>
+              <p>Before 2022, 5–6 player games used a special building phase instead: after each turn, everyone else could build in turn order, but not trade.</p>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="rules-game" data-game="ck" hidden>
+      <div class="rules-intro">
+        <div class="settings-group">
+          <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2021-06/catan_c_k_2020_rule_book_200708.pdf" target="_blank" rel="noopener">
+            <span class="switch-text">Official rulebook<small>Cities &amp; Knights Game Rules &amp; Almanac · PDF on catan.com</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
+          <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2024-03/Catan%20C%26K%205-6%202023%20Rules%20240313.pdf" target="_blank" rel="noopener">
+            <span class="switch-text">5–6 player rules<small>Cities &amp; Knights extension · PDF on catan.com</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
         </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Building</span>
-          <span class="rules-count">6</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Your pieces</h4>
-            <p>Each player has 15 roads, 5 settlements and 4 cities, and can’t build more than that.</p>
+
+        <section class="rules-costs" aria-label="Cities &amp; Knights building costs">
+          <h3 class="settings-section-title">Building costs</h3>
+          <div class="cost-row">
+            <span class="cost-name">Road</span>
+            <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Roads</h4>
-            <p>One road per edge. A new road must join one of your roads, settlements or cities.</p>
+          <div class="cost-row">
+            <span class="cost-name">Settlement <small>1 pt</small></span>
+            <span class="cost-chips"><span class="cost-chip cost-brick">Brick</span><span class="cost-chip cost-lumber">Lumber</span><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-grain">Grain</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Settlements</h4>
-            <p>Built on an empty corner touching one of your roads, following the distance rule. Worth 1 point.</p>
+          <div class="cost-row">
+            <span class="cost-name">City <small>2 pts</small></span>
+            <span class="cost-chips"><span class="cost-chip cost-grain">2× Grain</span><span class="cost-chip cost-ore">3× Ore</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Distance rule</h4>
-            <p>None of the 3 corners next to a settlement can have a settlement or city on it, yours included.</p>
+          <div class="cost-row">
+            <span class="cost-name">City wall</span>
+            <span class="cost-chips"><span class="cost-chip cost-brick">2× Brick</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Cities</h4>
-            <p>Upgrade one of your settlements; the settlement goes back to your supply. Worth 2 points, and collects 2 resources per roll.</p>
+          <div class="cost-row">
+            <span class="cost-name">Knight</span>
+            <span class="cost-chips"><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-ore">Ore</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Development cards</h4>
-            <p>Take the top card and keep it hidden. Used cards never go back into the deck.</p>
+          <div class="cost-row">
+            <span class="cost-name">Promote</span>
+            <span class="cost-chips"><span class="cost-chip cost-wool">Wool</span><span class="cost-chip cost-ore">Ore</span></span>
           </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Development cards</span>
-          <span class="rules-count">5</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Knight</h4>
-            <p>Move the robber and steal, just as on a 7. Played knights stay face up in front of you and count toward Largest Army. There are 14.</p>
+          <div class="cost-row">
+            <span class="cost-name">Activate</span>
+            <span class="cost-chips"><span class="cost-chip cost-grain">Grain</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Road Building</h4>
-            <p>Place 2 roads for free, following the usual rules.</p>
+          <div class="cost-row">
+            <span class="cost-name">Improvement</span>
+            <span class="cost-chips"><span class="cost-chip cost-commodity">1–5 × commodity</span></span>
           </div>
-          <div class="rules-entry">
-            <h4>Year of Plenty</h4>
-            <p>Take any 2 resources from the bank. You can use them this turn.</p>
+        </section>
+      </div>
+
+      <div class="rules-list">
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">What’s different</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>The big changes</h4>
+              <p>Cities &amp; Knights plays like CATAN, plus commodities, knights, city improvements, progress cards and the barbarians. There are no development cards and no Largest Army, and you play to 13 points.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Setup</h4>
+              <p>Each player places a settlement and a road, as usual. Then, going back the other way, each places a city (not a settlement) and a road. Your starting resources come from the hexes around your city.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Before you start</h4>
+              <p>The robber starts on the desert, and the barbarian ship starts at the beginning of its track.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Monopoly</h4>
-            <p>Name a resource. Every other player gives you all of that resource they hold.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">A turn</span>
+            <span class="rules-count">5</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Roll 3 dice</h4>
+              <p>Roll the red, yellow and event dice. Resolve the event die first: a ship moves the barbarians 1 space closer; a colored city gate means players may draw progress cards of that color.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Production</h4>
+              <p>Add the red and yellow dice for production as usual. A city on forest, pasture or mountains collects 1 resource plus 1 commodity; on fields it collects 2 grain, and on hills 2 brick.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Then, in any order</h4>
+              <p>Trade, build, hire, activate, promote or use knights, buy city improvements, and play any number of progress cards.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Rolling a 7</h4>
+              <p>No one collects. Anyone holding too many cards discards half, rounded down. The limit is 7 cards, plus 2 for each city wall you have. Then the robber moves and steals, as usual.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Before the first attack</h4>
+              <p>Until the barbarians first reach Catan, a 7 still makes players discard, but the robber stays on the desert and no one steals. Knights and progress cards can’t move it either.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Victory Point</h4>
-            <p>Worth 1 point; keep it hidden. Reveal your Victory Point cards when they take you to 10 on your turn, even the turn you bought one. There are 5.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Commodities</span>
+            <span class="rules-count">2</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>What they are</h4>
+              <p>Paper from forest, cloth from pasture and coin from mountains. Only cities produce them.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>How they work</h4>
+              <p>They count as cards in your hand for a 7, can be stolen or discarded, and trade just like resources: 4:1 with the bank, or 3:1 at a 3:1 harbor. You spend them on city improvements.</p>
+            </div>
           </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">The robber</span>
-          <span class="rules-count">3</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Rolling a 7</h4>
-            <p>No one collects resources. Anyone holding more than 7 resource cards (8 or more) discards half of them, rounded down.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Building</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>What things cost</h4>
+              <p>See the costs card above. Roads, settlements and cities cost the same as in CATAN.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Your pieces</h4>
+              <p>Each player has 5 settlements, 4 cities, 15 roads, 6 knights (2 each of basic, strong and mighty) and 3 city walls.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>City walls</h4>
+              <p>Built only under a city: one per city, 3 at most. Each one raises your safe hand limit on a 7 by 2. If the barbarians pillage that city, the wall is removed.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Moving the robber</h4>
-            <p>Whoever rolled must move it to a different hex (the desert counts), then steals 1 random resource from a player with a settlement or city on that hex. If there are several, they choose who.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Knights</span>
+            <span class="rules-count">7</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Hiring a knight</h4>
+              <p>Pay wool and ore to place a basic knight, inactive, on an empty corner connected to your roads. Knights ignore the distance rule. Basic knights have strength 1, strong 2 and mighty 3.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Activating</h4>
+              <p>Pay 1 grain to turn a knight active. You can activate it the turn you hire it, but a knight can’t act on the turn it was activated. Taking an action turns it inactive again.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Promoting</h4>
+              <p>Pay wool and ore to raise a knight one level, active or not; each knight at most once per turn. Promoting a strong knight to mighty needs the Fortress (politics level 3).</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Blocking roads</h4>
+              <p>Other players can’t build roads through a corner with your knight on it, and a knight placed on a road breaks it for Longest Road.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Moving</h4>
+              <p>Move an active knight along your own roads to another empty corner. It becomes inactive. To build a settlement where your knight stands, move the knight first.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Displacing</h4>
+              <p>Move an active knight onto a corner held by a weaker opposing knight. Its owner moves it to an empty corner connected by their roads, or removes it if there’s none. Your knight becomes inactive. You can’t displace your own knights.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Chasing away the robber</h4>
+              <p>An active knight next to the robber’s hex can move the robber and steal 1 card, as with a knight card in CATAN. The knight becomes inactive.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>A blocked hex</h4>
-            <p>The hex under the robber produces nothing until the robber moves again.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">The barbarians</span>
+            <span class="rules-count">6</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>The ship</h4>
+              <p>Each time the event die shows a ship, the barbarian ship moves 1 space. When it reaches the last space, the barbarians attack.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>The battle</h4>
+              <p>The barbarians’ strength is the number of cities on the island, metropolises included. Catan’s strength is the total of all active knights: basic 1, strong 2, mighty 3.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>If the barbarians win</h4>
+              <p>Whoever has the lowest total of active knights loses a city: it’s reduced to a settlement, and its wall is removed. Tied players each lose one. Players with no cities, or only metropolises, can’t lose one and don’t count as lowest.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>If Catan wins</h4>
+              <p>The player with the highest total of active knights gets a Defender of Catan card, worth 1 point. If players tie, no one gets it; each tied player draws a progress card from the stack of their choice.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>After an attack</h4>
+              <p>The ship goes back to the start, and every knight on the board turns inactive.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Losing your last city</h4>
+              <p>You keep your city improvements and progress cards, but can’t buy improvements until you have a city again.</p>
+            </div>
           </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Trading</span>
-          <span class="rules-count">4</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>With other players</h4>
-            <p>On your turn, trade with anyone, on any terms you agree. You must be part of every trade; other players can’t trade with each other.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">City improvements</span>
+            <span class="rules-count">5</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Three tracks</h4>
+              <p>Trade (yellow, paid in cloth), politics (blue, coin) and science (green, paper). Each level costs that many of the commodity: 1 for the first, 2 for the second, up to 5. You need at least one city to buy them.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Drawing progress cards</h4>
+              <p>Each level adds red die faces to that track. When the event die shows that color’s city gate and the red die matches one of your faces, you draw a progress card of that color. Players draw in turn order, starting with whoever rolled.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Level 3 abilities</h4>
+              <p>Trading House (yellow): trade commodities 2:1 for anything on your turn. Fortress (blue): promote strong knights to mighty. Aqueduct (green): when a production roll other than a 7 gives you nothing, take any 1 resource.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Metropolis</h4>
+              <p>The first to reach level 4 in a track puts that track’s metropolis on one of their cities. That city is worth 4 points and can’t be pillaged. Reaching level 5 first takes a metropolis from a player at level 4; at level 5 it’s yours for good.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Going past level 3</h4>
+              <p>You can only buy level 4 or 5 in a track if you have a city that could hold a metropolis.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Not allowed</h4>
-            <p>Giving cards away, trading like for like (say, 3 ore for 1 ore), trading development cards, or trading with the bank on someone else’s turn.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Progress cards</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Holding them</h4>
+              <p>Keep them hidden; you can hold at most 4, not counting victory point cards. If you draw a 5th on someone else’s turn, put one of your choice under its stack. They can’t be traded, and the robber can’t steal them.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Playing them</h4>
+              <p>Play any number on your turn, after rolling, even ones drawn this turn. Only the Alchemist is played before rolling. Played cards go face down under their stack.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Victory point cards</h4>
+              <p>The Printer and Constitution are played face up as soon as they’re drawn, even on someone else’s turn.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>With the bank</h4>
-            <p>On your turn, trade 4 of one resource for 1 of any other, harbor or not.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Science cards</span>
+            <span class="rules-count">10</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Alchemist (2)</h4>
+              <p>Play before rolling: choose what the red and yellow dice show (even a 7), then roll the event die and resolve it first.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Crane (2)</h4>
+              <p>One city improvement costs 1 commodity less. You can’t use 2 Cranes on the same improvement.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Engineer (1)</h4>
+              <p>Build a city wall for free.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Inventor (2)</h4>
+              <p>Swap any 2 number tokens on the board, except the 2, 12, 6 and 8.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Irrigation (2)</h4>
+              <p>Take 2 grain for each fields hex next to at least one of your settlements or cities.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Medicine (2)</h4>
+              <p>Upgrade a settlement to a city for 2 ore and 1 grain.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Mining (2)</h4>
+              <p>Take 2 ore for each mountains hex next to at least one of your settlements or cities.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Printer (1)</h4>
+              <p>1 victory point. Play it face up as soon as you draw it.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Road Building (2)</h4>
+              <p>Build 2 roads for free.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Smith (2)</h4>
+              <p>Promote up to 2 knights one level each for free. Mighty knights can’t be promoted, and strong to mighty still needs the Fortress.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Harbors</h4>
-            <p>With a settlement or city on a harbor: at a 3:1 harbor trade 3 of a kind for 1 of any other; at a 2:1 harbor trade 2 of its pictured resource for 1 of any other.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Politics cards</span>
+            <span class="rules-count">9</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Bishop (2)</h4>
+              <p>Move the robber, then steal 1 random card from each player with a settlement or city on its new hex.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Constitution (1)</h4>
+              <p>1 victory point. Play it face up as soon as you draw it.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Deserter (2)</h4>
+              <p>An opponent removes one of their knights, their choice. You may then place one of your own of the same strength.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Diplomat (2)</h4>
+              <p>Remove an open road (one with nothing at one end). If it’s your own, you may place it somewhere else for free.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Intrigue (2)</h4>
+              <p>Displace an opponent’s knight on a corner connected to your roads, without using a knight of your own.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Saboteur (2)</h4>
+              <p>Each player with as many points as you or more discards half their cards, rounded down.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Spy (3)</h4>
+              <p>Look at another player’s progress cards and take 1 (not a victory point card).</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Warlord (2)</h4>
+              <p>Activate all your knights for free.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Wedding (2)</h4>
+              <p>Each player with more points than you gives you 2 resource or commodity cards of their choice.</p>
+            </div>
           </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Longest Road &amp; Largest Army</span>
-          <span class="rules-count">3</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Longest Road</h4>
-            <p>The first player with a continuous road of 5 or more segments takes this card, worth 2 points. Only the single longest branch counts. A player who builds a longer road takes it away.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Trade cards</span>
+            <span class="rules-count">6</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Commercial Harbor (2)</h4>
+              <p>Offer each opponent 1 resource from your hand; each must give you 1 commodity of their choice for it, if they have one.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Master Merchant (2)</h4>
+              <p>Look at the hand of a player with more points than you and take 2 resource or commodity cards.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Merchant (6)</h4>
+              <p>Put the merchant on a land hex next to your settlement or city. While it stays there, trade that hex’s resource 2:1, and you hold 1 victory point. Another Merchant card takes it over.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Merchant Fleet (2)</h4>
+              <p>This turn, trade one resource or commodity of your choice 2:1 with the bank, as often as you like.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Resource Monopoly (4)</h4>
+              <p>Name a resource. Each other player gives you 2 of it, or 1 if that’s all they have.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Trade Monopoly (2)</h4>
+              <p>Name a commodity. Each other player gives you 1 of it.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Breaking a road</h4>
-            <p>A settlement built on an empty corner along someone’s road splits it. If the holder is still tied for longest, they keep the card. If others tie for longest, or no one has 5 or more, the card is set aside until one player has the longest.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Winning</span>
+            <span class="rules-count">2</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>13 points on your turn</h4>
+              <p>Reach 13 points during your own turn and you win.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Points</h4>
+              <p>Settlement 1, city 2, metropolis 2 more (4 for that city), Longest Road 2, and 1 each for Defender of Catan cards, the Printer, the Constitution and holding the merchant.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Largest Army</h4>
-            <p>The first player with 3 knights face up takes this card, worth 2 points. A player with more knights face up takes it away.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">Optional rules</span>
+            <span class="rules-count">3</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Easy start</h4>
+              <p>For each player’s first 2 turns, reroll any 7 and don’t roll the event die.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Knight-errant</h4>
+              <p>An active knight may chase away the robber before you roll, like playing a knight card before rolling in CATAN.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Nasty variant</h4>
+              <p>When the barbarians attack, each player, starting with whoever rolled, decides which of their active knights defend. Only those count, for the battle and for who loses a city.</p>
+            </div>
           </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">Winning</span>
-          <span class="rules-count">2</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>10 points on your turn</h4>
-            <p>Reach 10 points during your own turn and you win at once. If you get there on someone else’s turn, you win once your turn comes.</p>
+        </details>
+        <details class="rules-section">
+          <summary>
+            <span class="rules-section-name">5–6 players</span>
+            <span class="rules-count">2</span>
+            <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </summary>
+          <div class="rules-entries">
+            <div class="rules-entry">
+              <h4>Paired turns</h4>
+              <p>As in CATAN 5–6: player 1 rolls and takes a full turn, then player 2 trades with the bank only, builds, uses knights, improves cities and plays progress cards.</p>
+            </div>
+            <div class="rules-entry">
+              <h4>Activating knights</h4>
+              <p>A knight activated during player 2’s part of the turn can act on its owner’s next turn.</p>
+            </div>
           </div>
-          <div class="rules-entry">
-            <h4>Points</h4>
-            <p>Settlement 1, city 2, Longest Road 2, Largest Army 2, and 1 for each Victory Point card.</p>
-          </div>
-        </div>
-      </details>
-      <details class="rules-section">
-        <summary>
-          <span class="rules-section-name">5–6 players</span>
-          <span class="rules-count">3</span>
-          <svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
-        </summary>
-        <div class="rules-entries">
-          <div class="rules-entry">
-            <h4>Paired turns</h4>
-            <p>The starting player is player 1, and the third player to their left is player 2. Player 1 rolls and takes a full turn. Then player 2 builds, trades with the bank only, and may play a development card. Then both pass their markers to the left.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>If both reach 10</h4>
-            <p>Player 1 wins.</p>
-          </div>
-          <div class="rules-entry">
-            <h4>Older boxes</h4>
-            <p>Before 2022, 5–6 player games used a special building phase instead: after each turn, everyone else could build in turn order, but not trade.</p>
-          </div>
-        </div>
-      </details>
+        </details>
+      </div>
     </div>
     <p id="rules-empty" class="rules-empty" hidden></p>
   </dialog>

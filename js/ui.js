@@ -195,9 +195,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ----- Rules page -----
-// Opened from the book button in the header, laid out like Settings.
-// Searching shows only the entries that match, in their sections, with the
-// matches highlighted.
+// Opened from the book button in the header, laid out like Settings, with
+// a switch between the base game and Cities & Knights (remembered).
+// Searching shows only the entries that match in the game showing, in
+// their sections, with the matches highlighted.
+
+var RULES_GAME_KEY = "rulesGame";
 
 /**
  * Open or close a rules section, sliding its entries open or shut (from
@@ -262,8 +265,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const entries = Array.from(dialog.querySelectorAll(".rules-entry")).map((entry) => ({
     entry: entry,
     section: entry.closest(".rules-section"),
+    game: entry.closest(".rules-game"),
     parts: Array.from(entry.querySelectorAll("h4, p")).map((el) => ({ el: el, text: el.textContent }))
   }));
+  const games = Array.from(dialog.querySelectorAll(".rules-game"));
+  const gameChoices = Array.from(dialog.querySelectorAll('input[name="rules-game"]'));
+
+  // Base game or Cities & Knights; the search applies to whichever shows
+  const showGame = (game) => {
+    games.forEach((el) => { el.hidden = el.dataset.game !== game; });
+    gameChoices.forEach((input) => { input.checked = input.value === game; });
+    try {
+      localStorage.setItem(RULES_GAME_KEY, game);
+    } catch (err) {
+      // Not remembered; fine
+    }
+    search.dispatchEvent(new Event("input"));
+  };
+  gameChoices.forEach((input) => {
+    input.addEventListener("change", () => showGame(input.value));
+  });
+  let savedGame = null;
+  try {
+    savedGame = localStorage.getItem(RULES_GAME_KEY);
+  } catch (err) {
+    // Storage blocked: start on the base game
+  }
 
   // Sections slide open and shut instead of snapping
   sections.forEach((section) => {
@@ -285,7 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const match = !query ||
         item.parts.some((part) => part.text.toLowerCase().includes(query));
       item.entry.hidden = !match;
-      if (match && query) found += 1;
+      if (match && query && !item.game.hidden) found += 1;
       item.parts.forEach((part) => highlightText(part.el, part.text, match ? query : ""));
     });
     // Sections with matches open; the rest hide. Cleared, all close again.
@@ -304,6 +331,8 @@ document.addEventListener("DOMContentLoaded", () => {
     empty.hidden = !query || found > 0;
     empty.textContent = `No rules match “${search.value.trim()}”.`;
   });
+
+  if (savedGame === "ck") showGame("ck");
 });
 
 // When DOM is ready, run the existing init() from catan.js

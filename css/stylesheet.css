@@ -1207,10 +1207,20 @@ body {
   font-size: 1rem;
 }
 
+/* One game's links, costs and sections */
+.rules-game,
 .rules-intro {
   display: flex;
   flex-direction: column;
   gap: 1.4rem;
+}
+
+.rules-game[hidden] {
+  display: none;
+}
+
+.rules-games {
+  flex-shrink: 0;
 }
 
 .rules-dialog.is-searching .rules-intro {
@@ -1280,6 +1290,7 @@ body {
 .cost-wool { background: #65a30d; }
 .cost-grain { background: #ca8a04; }
 .cost-ore { background: #64748b; }
+.cost-commodity { background: #0f766e; }
 
 .rules-list {
   flex-shrink: 0;
