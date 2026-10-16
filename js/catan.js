@@ -868,15 +868,23 @@ function init() {
         });
 
         // Settings > Clear all boards, after a check (it can't be undone)
+        const clearDialog = document.getElementById("clear-dialog");
         $("#clear-boards").click(() => {
             const total = boardHistory.length;
-            const question = total === 1
-                ? "Clear the board from this session? This can't be undone."
-                : `Clear all ${total} boards from this session? This can't be undone.`;
-            if (!window.confirm(question)) return;
+            const boards = total === 1 ? "1 board" : `${total} boards`;
+            document.getElementById("clear-text").textContent =
+                `This removes ${total === 1 ? "the" : "all"} ${boards} from this session. It can’t be undone.`;
+            document.getElementById("clear-confirm").textContent = `Clear ${boards}`;
+            clearDialog.showModal();
+        });
+        $("#clear-cancel").click(() => closeDialog(clearDialog));
+        $("#clear-confirm").click(() => {
+            closeDialog(clearDialog);
             closeDialog(document.getElementById("settings-dialog"));
             clearAllBoards();
         });
+        // Esc, and a click on the dimmed backdrop, cancel
+        setUpDialogClosing(clearDialog);
 
         setUpShareCard();
         setUpBoardSwipe();
