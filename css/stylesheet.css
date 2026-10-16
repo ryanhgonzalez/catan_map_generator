@@ -1533,61 +1533,44 @@ body {
     padding: 0 0.75rem 0.9rem;
   }
 
-  /* A tall board card: up to 520px, less on shorter phones so the header and
-     nav bar still fit */
+  /* A tall board card: up to 520px, less on shorter phones so the header,
+     pager and New board button still fit */
   .map-container {
-    height: min(520px, calc(100dvh - 272px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    height: min(520px, calc(100dvh - 248px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     min-height: 340px;
   }
 
-  /* Bottom nav bar, like a native app's tab bar. Sticky keeps it on
-     screen on short phones where the page scrolls. */
+  /* No bar: New board floats over the bottom edge on its own (sticky keeps
+     it on screen on short phones where the page scrolls), since swiping
+     the card does Previous and Next */
   .board-nav {
     position: sticky;
-    bottom: 0;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
     z-index: 2;
+    display: flex;
+    justify-content: center;
     max-width: none;
-    margin: 0;
-    grid-template-columns: 72px minmax(0, 1fr) 72px;
-    gap: 1rem;
-    padding: 0.6rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--nav-border);
-    background: var(--nav-bg);
-    backdrop-filter: blur(12px);
+    margin: 0 0 max(0.75rem, env(safe-area-inset-bottom));
+    pointer-events: none;
   }
 
-  .nav-item {
-    width: auto;
-    height: 56px;
-    flex-direction: column;
-    gap: 3px;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    font-size: 0.72rem;
-    font-weight: 500;
-  }
-
-  .nav-item:hover:not(:disabled) {
-    background: transparent;
-  }
-
-  .nav-item:disabled {
-    opacity: 0.4;
-  }
-
-  .nav-label {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
+  /* Previous and Next stay for screen readers (which can't swipe the
+     card), out of sight */
+  .board-nav .nav-item {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .btn-generate {
     height: 52px;
+    padding: 0 1.75rem;
     font-weight: 700;
+    pointer-events: auto;
   }
 
   /* Settings as a full page with a back arrow */
