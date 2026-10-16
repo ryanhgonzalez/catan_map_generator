@@ -867,24 +867,42 @@ function init() {
             });
         });
 
-        // Settings > Clear all boards, after a check (it can't be undone)
-        const clearDialog = document.getElementById("clear-dialog");
-        $("#clear-boards").click(() => {
-            const total = boardHistory.length;
-            const boards = total === 1 ? "1 board" : `${total} boards`;
-            document.getElementById("clear-text").textContent =
-                `This removes ${total === 1 ? "the" : "all"} ${boards} from this session. It can’t be undone.`;
-            document.getElementById("clear-confirm").textContent = `Clear ${boards}`;
-            clearDialog.showModal();
+        // Settings > Clear all boards: the row opens a confirmation under
+        // it (it can't be undone); tapping the row again or Cancel closes it
+        const clearRow = document.getElementById("clear-boards");
+        const clearPanel = document.getElementById("clear-panel");
+        const showClearPanel = (open) => {
+            clearRow.setAttribute("aria-expanded", String(open));
+            slidePanel(clearPanel, open);
+            // It's near the bottom of Settings: bring it into view
+            if (open) {
+                setTimeout(() => clearPanel.scrollIntoView({ block: "nearest", behavior: "smooth" }), 200);
+            }
+        };
+        $(clearRow).click(() => {
+            const open = clearRow.getAttribute("aria-expanded") !== "true";
+            if (open) {
+                const total = boardHistory.length;
+                const boards = total === 1 ? "1 board" : `${total} boards`;
+                document.getElementById("clear-text").textContent =
+                    `This removes ${total === 1 ? "the" : "all"} ${boards} from this session. It can’t be undone.`;
+                document.getElementById("clear-confirm").textContent = `Clear ${boards}`;
+            }
+            showClearPanel(open);
         });
-        $("#clear-cancel").click(() => closeDialog(clearDialog));
+        $("#clear-cancel").click(() => showClearPanel(false));
         $("#clear-confirm").click(() => {
-            closeDialog(clearDialog);
             closeDialog(document.getElementById("settings-dialog"));
             clearAllBoards();
         });
-        // Esc, and a click on the dimmed backdrop, cancel
-        setUpDialogClosing(clearDialog);
+        // Closed again whenever Settings closes
+        document.getElementById("settings-dialog").addEventListener("close", () => {
+            if (clearPanel.slide) clearPanel.slide.cancel();
+            clearPanel.slide = null;
+            clearPanel.style.overflow = "";
+            clearPanel.hidden = true;
+            clearRow.setAttribute("aria-expanded", "false");
+        });
 
         setUpShareCard();
         setUpBoardSwipe();

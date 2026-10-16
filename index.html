@@ -306,7 +306,7 @@
     <section class="settings-section" aria-labelledby="boards-section-title">
       <h3 id="boards-section-title" class="settings-section-title">Boards</h3>
       <div class="settings-group">
-        <button id="clear-boards" class="settings-row-button settings-row-danger" type="button" disabled>
+        <button id="clear-boards" class="settings-row-button settings-row-danger" type="button" aria-expanded="false" aria-controls="clear-panel" disabled>
           <span class="switch-text">Clear all boards<small id="clear-boards-note">No boards yet</small></span>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -315,6 +315,15 @@
             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
           </svg>
         </button>
+        <!-- Opens under the row to confirm (it can't be undone) -->
+        <div id="clear-panel" class="clear-panel" hidden>
+          <p class="clear-panel-title">Clear all boards?</p>
+          <p id="clear-text" class="clear-panel-text"></p>
+          <div class="clear-panel-actions">
+            <button id="clear-cancel" class="btn btn-secondary" type="button">Cancel</button>
+            <button id="clear-confirm" class="btn btn-danger" type="button">Clear boards</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1092,26 +1101,6 @@
     <p id="rules-empty" class="rules-empty" hidden></p>
   </dialog>
 
-
-  <!-- Clear all boards: confirmed here, over Settings. Same sheet/card as
-       the install prompt. -->
-  <dialog id="clear-dialog" class="install-dialog confirm-dialog" aria-labelledby="clear-title" aria-describedby="clear-text">
-    <span class="confirm-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6h18" />
-        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      </svg>
-    </span>
-    <!-- Focus lands on the title, not on the button that clears -->
-    <h2 id="clear-title" class="install-title" tabindex="-1" autofocus>Clear all boards?</h2>
-    <p id="clear-text" class="install-text"></p>
-    <div class="install-actions">
-      <button id="clear-cancel" class="btn btn-secondary" type="button">Cancel</button>
-      <button id="clear-confirm" class="btn btn-danger" type="button">Clear boards</button>
-    </div>
-  </dialog>
 
   <!-- Install prompt: a bottom sheet on phones, a card on wider screens -->
   <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-title" aria-describedby="install-text">

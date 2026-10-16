@@ -235,6 +235,35 @@ function toggleRulesSection(section, opening) {
   };
 }
 
+/**
+ * Slide a hidden panel open, or shut and hidden again, by animating its
+ * height (from wherever it is, if it's mid-slide).
+ */
+function slidePanel(panel, opening) {
+  const from = panel.hidden ? 0 : panel.getBoundingClientRect().height;
+  if (panel.slide) panel.slide.cancel();
+  panel.hidden = false;
+  const to = opening ? panel.scrollHeight : 0;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    panel.hidden = !opening;
+    return;
+  }
+  panel.style.overflow = "hidden";
+  const slide = panel.animate([
+    { height: `${from}px`, opacity: opening ? 0.4 : 1 },
+    { height: `${to}px`, opacity: opening ? 1 : 0 }
+  ], {
+    duration: opening ? 320 : 260,
+    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)"
+  });
+  panel.slide = slide;
+  slide.onfinish = () => {
+    panel.slide = null;
+    panel.style.overflow = "";
+    panel.hidden = !opening;
+  };
+}
+
 /** Set an element's text, wrapping each match of query in <mark>. */
 function highlightText(element, text, query) {
   element.replaceChildren();
