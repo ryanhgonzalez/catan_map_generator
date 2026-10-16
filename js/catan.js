@@ -11,21 +11,9 @@ var canvasHeight;
 
 // ----- Hexagon drawing parameters -----
 
-var mapStyle = "retro";
-
 var size = null;
-var defaultFillStyle = "#ffffff";
-var strokeStyle = "#000000";
 var lineWidth = 3;
-var resourceTypeToColor = {
-	"ore": "#363636",
-	"clay": "#E83200",
-	"wool": "#98E82E",
-	"wood": "#0A7300",
-	"grain": "#E0E000",
-	"desert": "#F2F0A0",
-	"none": "#ffffff"
-};
+// Each resource's tile picture, drawn into a canvas once loaded
 var resourceTypeToImageCanvas = {
 	"ore": null,
 	"clay": null,
@@ -53,8 +41,6 @@ const CODE_TO_RESOURCE = {
     5: "ore"
 };
 
-
-//var allImagesLoaded = false;
 
 // ----- Grid layout globals -----
 
@@ -331,25 +317,9 @@ var currentBoardIndex = -1; // No boards generated yet
 // ----- URL encoding helpers -----
 
 /**
- * Encode the current board into a compact Base64 string and return it.
- * Format before encoding: "gridX,gridY:resource:number;..."
+ * Encode the board on screen for share links, as Base64 of its tiles
+ * ("x,y,resource,number" joined by ".") and then its harbor types.
  */
-function encodeBoard() {
-    if (!catanMap.hexTiles) return "";
-
-    const payload = catanMap.hexTiles.map(tile => {
-        const n = (typeof tile.number === 'number') ? tile.number : "";
-        return `${tile.gridX},${tile.gridY}:${tile.resourceType}:${n}`;
-    }).join(";");
-
-    try {
-        return btoa(payload);
-    } catch (e) {
-        console.error('Failed to encode board to base64', e);
-        return "";
-    }
-}
-
 function encodeBoardShort() {
     if (!catanMap.hexTiles) return "";
 
@@ -368,46 +338,6 @@ function encodeBoardShort() {
     return btoa(compact);
 }
 
-
-/**
- * Decode a Base64 board string into an array of tile objects.
- * Returns null on failure.
- */
-function decodeBoard(b64) {
-    if (!b64) return null;
-    let decoded;
-    try {
-        decoded = atob(b64);
-    } catch (e) {
-        console.error('Invalid base64 for board:', e);
-        return null;
-    }
-
-    if (!decoded) return null;
-
-    const entries = decoded.split(";");
-    const tiles = [];
-
-    for (let i = 0; i < entries.length; i++) {
-        const entry = entries[i];
-        if (!entry) continue;
-        const parts = entry.split(":");
-        if (parts.length < 2) {
-            console.warn('Malformed board entry:', entry);
-            continue;
-        }
-        const coords = parts[0].split(",");
-        const x = parseInt(coords[0]);
-        const y = parseInt(coords[1]);
-        const resource = parts[1];
-        const numPart = parts[2] || "";
-        const number = (numPart === "") ? null : parseInt(numPart);
-
-        tiles.push({ gridX: x, gridY: y, resourceType: resource, number: number });
-    }
-
-    return tiles;
-}
 
 function decodeBoardShort(b64) {
     let decoded;
@@ -2260,16 +2190,11 @@ function HexTile() {
 	this.xCenter;
 	this.yCenter;
 	this.resourceType = "none";
-	this.fillStyle = defaultFillStyle;
 	this.number;
 }
-HexTile.prototype.strokeStyle = strokeStyle;
-HexTile.prototype.hexColorMap = resourceTypeToColor;
-HexTile.prototype.size = size;
 HexTile.prototype.setResourceType = function(resourceType) {
-	if (this.hexColorMap[resourceType]) {
+	if (resourceType in resourceTypeToImageCanvas) {
 		this.resourceType = resourceType;
-		this.fillStyle = this.hexColorMap[resourceType];
 	} else {
 		console.log("Unrecognized resource type:",resourceType);
 	}
@@ -2295,16 +2220,9 @@ HexTile.prototype.draw = function() {
 	}
 }
 HexTile.prototype.drawBase = function() {
-	if (mapStyle == "retro") {
-        drawingContext.lineWidth = Math.max(3, Math.min(10, size / 15));
-		drawingContext.fillStyle = "rgba(255,255,255,0)";
-		drawingContext.strokeStyle = "#FAEB96";
-	} else {
-		// Global lineWidth is recomputed by CatanMap.resize()
-		drawingContext.lineWidth = lineWidth;
-		drawingContext.fillStyle = this.fillStyle;
-		drawingContext.strokeStyle = this.strokeStyle;
-	}
+	// The tile's picture with a gold rim
+	drawingContext.lineWidth = Math.max(3, Math.min(10, size / 15));
+	drawingContext.strokeStyle = "#FAEB96";
 	
 	var angleOffset = Math.PI / 6;
 	
@@ -2325,22 +2243,15 @@ HexTile.prototype.drawBase = function() {
 	}
 	drawingContext.closePath();
 	
-	if (mapStyle == "retro") {
-		
-		var imgCanvas = resourceTypeToImageCanvas[this.resourceType];
-		
-		drawingContext.drawImage(
-			imgCanvas,
-			0, 0, imgCanvas.width, imgCanvas.height, 
-			this.xCenter - size,
-			this.yCenter - dy,
-			2*size,
-			2*dy
-		);
-		
-	} else {
-		drawingContext.fill();
-	}
+	var imgCanvas = resourceTypeToImageCanvas[this.resourceType];
+	drawingContext.drawImage(
+		imgCanvas,
+		0, 0, imgCanvas.width, imgCanvas.height, 
+		this.xCenter - size,
+		this.yCenter - dy,
+		2*size,
+		2*dy
+	);
 	
 	drawingContext.stroke();
 	
@@ -2397,9 +2308,6 @@ Array.prototype.random = function(removeElem) {
 		this.splice(idx,1);
 	}
 	return val;
-}
-Array.prototype.copy = function() {
-	return this.slice();
 }
 
 function addCanvas() {

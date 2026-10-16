@@ -364,13 +364,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (savedGame === "ck") showGame("ck");
 });
 
-// When DOM is ready, run the existing init() from catan.js
+// When DOM is ready, run init() from catan.js. It hides the loading
+// overlay once the first board is ready.
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize board history
-  window.boardHistory = [];
-  window.currentBoardIndex = -1;
-  
-  // catan.js hides the loading overlay once the first board is ready
   if (typeof init === "function") init();
 });
 
