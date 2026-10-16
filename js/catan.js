@@ -509,8 +509,18 @@ function showBoardState(state) {
 
 /**
  * Keep ?board= in the address bar in sync so the URL always shares the
- * board on screen.
+ * board on screen (or has none, with no board).
  */
+function syncAddressBar() {
+    if (catanMap.hexTiles) {
+        updateShareUrl();
+        return;
+    }
+    const url = new URL(window.location);
+    url.searchParams.delete("board");
+    window.history.replaceState({}, "", url);
+}
+
 function updateShareUrl() {
     const encoded = encodeBoardShort();
     if (encoded) {
@@ -681,11 +691,17 @@ async function springBoardHome(fromPose, velocity) {
  * and velocity are a swipe's at release; with neither it gets a firm push
  * from rest.
  */
+// The back button closes the share card (see backOpened in ui.js)
+function closeShareCardFromBack() {
+    closeShareCard();
+}
+
 async function openShareCard(fromPose, velocity) {
     if (shareOpen || !catanMap.hexTiles) return;
     if (!(await settleMotion())) return;
     if (!fromPose) showShareCardUnder();
     shareOpen = true;
+    backOpened(closeShareCardFromBack);
     document.body.classList.add("share-open");
     setBoardControlsInert(true);
     setCardHint(null);
@@ -702,6 +718,7 @@ async function closeShareCard(fromPose, velocity) {
     if (!(await settleMotion())) return;
     // Closed as of now; the board card finishes coming down
     shareOpen = false;
+    backClosed(closeShareCardFromBack);
     document.body.classList.remove("share-open");
     setBoardControlsInert(false);
     await springBoardHome(fromPose || { y: boardAwayY() }, velocity || { x: 0, y: 0 });
@@ -1636,6 +1653,7 @@ async function clearAllBoards() {
     if (!(await settleMotion())) return;
     if (shareOpen) {
         shareOpen = false;
+        backClosed(closeShareCardFromBack);
         document.body.classList.remove("share-open");
         setBoardControlsInert(false);
         resetShareCard();
@@ -1646,9 +1664,7 @@ async function clearAllBoards() {
     drawingContext.clear();
     document.getElementById("board-balance").hidden = true;
     // The address bar no longer shares a board
-    const url = new URL(window.location);
-    url.searchParams.delete("board");
-    window.history.replaceState({}, "", url);
+    syncAddressBar();
     enableButtons();
 }
 

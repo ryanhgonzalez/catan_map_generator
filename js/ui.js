@@ -180,6 +180,71 @@ function setUpDialogClosing(dialog) {
   });
 }
 
+// ----- Back button -----
+// Android's back button (and the browser's) closes what's open on top (a
+// page like Settings or Rules, a sheet, or the share card) instead of
+// leaving the app. Each one adds a history entry when it opens; going back
+// closes the newest, and closing one another way takes an entry off again.
+// The entries are all alike, so only how many there are matters.
+
+// How to close each thing that's open, newest last
+const backStack = [];
+// Our own history.back() calls still to arrive as popstate
+let backSkips = 0;
+// Entries to add once those have arrived: adding one while a back is still
+// on its way can make the browser go back past it (e.g. Settings closing
+// just before Settings > Share opens the share card)
+let backPushesWaiting = 0;
+
+function backOpened(close) {
+  backStack.push(close);
+  if (backSkips > 0) {
+    backPushesWaiting += 1;
+  } else {
+    history.pushState({ overlay: true }, "");
+  }
+}
+
+function backClosed(close) {
+  const at = backStack.indexOf(close);
+  // Already off the stack: it was closed by going back
+  if (at === -1) return;
+  backStack.splice(at, 1);
+  if (backPushesWaiting > 0) {
+    // Its entry was never added
+    backPushesWaiting -= 1;
+    return;
+  }
+  backSkips += 1;
+  history.back();
+}
+
+window.addEventListener("popstate", () => {
+  if (backSkips > 0) {
+    backSkips -= 1;
+    if (backSkips === 0) {
+      for (; backPushesWaiting > 0; backPushesWaiting -= 1) {
+        history.pushState({ overlay: true }, "");
+      }
+    }
+  } else if (backStack.length > 0) {
+    backStack.pop()();
+  }
+  // The entry gone back to may carry an older ?board=
+  if (typeof syncAddressBar === "function") syncAddressBar();
+});
+
+// Every dialog (Settings, Rules, Install) joins in as it opens and closes
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("dialog").forEach((dialog) => {
+    const close = () => closeDialog(dialog);
+    new MutationObserver(() => {
+      if (dialog.open && !backStack.includes(close)) backOpened(close);
+    }).observe(dialog, { attributes: true, attributeFilter: ["open"] });
+    dialog.addEventListener("close", () => backClosed(close));
+  });
+});
+
 // ----- Settings dialog -----
 // A full page on phones and a side panel on wider screens (see the CSS);
 // a native <dialog> handles focus.
