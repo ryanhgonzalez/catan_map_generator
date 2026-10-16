@@ -369,22 +369,84 @@ function decodeBoardShort(b64) {
 }
 
 
+// ----- Saved boards -----
+// The session's boards are kept on the device, so they survive the app
+// being closed (iOS closes home screen apps in the background), until
+// Clear all boards.
+
+var SESSION_STORAGE_KEY = "boardSession";
+// Nothing is saved until the boards have been loaded at startup, so the
+// empty history before that can't wipe the saved ones
+var sessionLoaded = false;
+
+/** Save the boards and which one is showing (no boards: forget them). */
+function saveSession() {
+    if (!sessionLoaded) return;
+    try {
+        if (boardHistory.length === 0) {
+            localStorage.removeItem(SESSION_STORAGE_KEY);
+        } else {
+            localStorage.setItem(SESSION_STORAGE_KEY,
+                JSON.stringify({ boards: boardHistory, index: currentBoardIndex }));
+        }
+    } catch (err) {
+        // Storage full or blocked: the boards just aren't kept
+    }
+}
+
+/** The saved boards ({boards, index}), or null if there are none. */
+function loadSavedSession() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY));
+        if (saved && Array.isArray(saved.boards) && saved.boards.length > 0 &&
+                saved.boards.every(board => board && Array.isArray(board.tiles))) {
+            return saved;
+        }
+    } catch (err) {
+        // Unreadable: start fresh
+    }
+    return null;
+}
+
+// Whether two board states are the same board
+function sameBoard(a, b) {
+    const key = (state) => state.tiles
+        .map(t => `${t.gridX},${t.gridY},${t.resourceType},${t.number || 0}`)
+        .join(".") + "|" + (state.harborTypes || []).join(",");
+    return key(a) === key(b);
+}
+
 /**
- * Load a decoded shared board ({tiles, harborTypes}), render it and make
- * it the start of the history.
+ * Open the app on its boards: the saved ones, at the board that was
+ * showing, and a board from a shared link (sharedState, if any). A shared
+ * board already saved is just shown; a new one is added at the end.
  */
-function loadBoardFromDecodedState(state) {
-    if (!state || !Array.isArray(state.tiles)) return;
+function restoreBoards(sharedState) {
+    const saved = loadSavedSession();
+    if (!saved) {
+        boardHistory = [sharedState];
+        currentBoardIndex = 0;
+    } else {
+        boardHistory = saved.boards;
+        currentBoardIndex = Math.max(0, Math.min(boardHistory.length - 1, saved.index | 0));
+        if (sharedState) {
+            const found = boardHistory.findIndex(board => sameBoard(board, sharedState));
+            if (found === -1) {
+                boardHistory.push(sharedState);
+                currentBoardIndex = boardHistory.length - 1;
+            } else {
+                currentBoardIndex = found;
+            }
+        }
+    }
+    showBoardState(boardHistory[currentBoardIndex]);
 
-    showBoardState(state);
-
-    // Start the game type switch on the shared board's type, so New board
-    // keeps making boards like the one that was shared
-    const gameType = catanMap.mapDefinition === expandedMap ? "expanded" : "normal";
-    $(`input[name=game-type][value=${gameType}]`)[0].checked = true;
-
-    boardHistory = [state];
-    currentBoardIndex = 0;
+    // A shared board sets the game type switch, so New board keeps making
+    // boards like the one that was shared
+    if (sharedState) {
+        const gameType = catanMap.mapDefinition === expandedMap ? "expanded" : "normal";
+        $(`input[name=game-type][value=${gameType}]`)[0].checked = true;
+    }
     enableButtons();
 }
 
@@ -842,12 +904,14 @@ function init() {
 
         hideLoadingState();
 
-        // Open on the shared board if the link has one, else a new board
+        // Open on the saved boards and/or the link's shared board, else a
+        // new board
         const url = new URL(window.location);
         const encodedBoard = url.searchParams.get('board');
-        const boardState = encodedBoard && decodeBoardShort(encodedBoard);
-        if (boardState) {
-            loadBoardFromDecodedState(boardState);
+        const boardState = (encodedBoard && decodeBoardShort(encodedBoard)) || null;
+        sessionLoaded = true;
+        if (boardState || loadSavedSession()) {
+            restoreBoards(boardState);
         } else {
             generate();
         }
@@ -1554,6 +1618,7 @@ function enableButtons() {
     goForwardButton.disabled = currentBoardIndex >= boardHistory.length - 1;
     shareButton.disabled = !hasBoard;
     updatePager();
+    saveSession();
 
     // Settings > Clear all boards
     const total = boardHistory.length;
