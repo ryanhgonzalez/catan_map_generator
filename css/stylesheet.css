@@ -1571,6 +1571,19 @@ body {
     min-height: 340px;
   }
 
+  /* Opened from the Home Screen, iOS 26 blurs about 40pt below the status
+     bar, with no way to turn it off, so the header starts below that and
+     the board gives up the same height */
+  @media (display-mode: standalone) {
+    .app-header {
+      padding-top: calc(env(safe-area-inset-top) + 2.75rem);
+    }
+
+    .map-container {
+      height: min(520px, calc(100dvh - 292px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    }
+  }
+
   /* No bar: New board floats over the bottom edge on its own (sticky keeps
      it on screen on short phones where the page scrolls), since swiping
      the card does Previous and Next */
