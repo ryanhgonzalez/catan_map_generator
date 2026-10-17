@@ -730,21 +730,17 @@ body {
   font-size: 1rem;
 }
 
-/* Share, Rules and Settings in the header: round buttons ringed in the
-   accent color, which fill in a little on hover and press */
+/* Share, Rules and Settings in the header: round buttons filled like the
+   New board button (gold on dark, navy with gold icons on white) */
 .btn-header {
-  border: 1.5px solid var(--accent);
-  background: var(--segment-track);
-  color: var(--accent);
-}
-
-:root[data-theme="light"] .btn-header {
-  background: #ffffff;
+  border-color: var(--btn-primary-border);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
 }
 
 .btn-header:hover:not(:disabled),
 .btn-header:active:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  filter: brightness(1.08);
 }
 
 /* Visually hidden, still read by screen readers */
