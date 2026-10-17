@@ -1571,16 +1571,16 @@ body {
     min-height: 340px;
   }
 
-  /* Opened from the Home Screen, iOS 26 blurs about 40pt below the status
-     bar, with no way to turn it off, so the header starts below that and
-     the board gives up the same height */
+  /* Opened from the Home Screen, iOS 26 blurs below the status bar with no
+     way to turn it off, so the header starts lower (placed by eye on an
+     iPhone) and the board gives up the same height */
   @media (display-mode: standalone) {
     .app-header {
-      padding-top: calc(env(safe-area-inset-top) + 2.75rem);
+      padding-top: calc(env(safe-area-inset-top) + 1.5rem);
     }
 
     .map-container {
-      height: min(520px, calc(100dvh - 292px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+      height: min(520px, calc(100dvh - 272px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     }
   }
 
