@@ -1,9 +1,10 @@
-Catan Board Generator
-=====================
+Catan Companion
+===============
 
-A board generator for CATAN, made for phones at the game table. It makes
+A companion app for CATAN, made for phones at the game table. It makes
 balanced random boards for the standard (3–4 player) and expanded (5–6
-player) maps, and installs as an app that works offline.
+player) maps, has a short guide to the rules, and installs as an app that
+works offline.
 
 **Use it at [catanboard.pages.dev](https://catanboard.pages.dev).**
 

@@ -1,7 +1,7 @@
 {
-  "name": "Catan Board Generator",
-  "short_name": "Catan Boards",
-  "description": "Generate balanced classic and expanded Catan maps.",
+  "name": "Catan Companion",
+  "short_name": "Catan",
+  "description": "Balanced Catan boards and a quick rules guide for the game table.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

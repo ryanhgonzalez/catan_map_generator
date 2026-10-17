@@ -20,6 +20,7 @@ const PRECACHE_URLS = [
   "js/install.js",
   "js/vendor/qrcode.js",
   "images/catan-wordmark.png",
+  "fonts/cinzel-800.woff2",
   "images/clay.png",
   "images/desert.png",
   "images/grain.png",
