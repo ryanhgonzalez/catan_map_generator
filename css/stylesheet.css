@@ -17,16 +17,16 @@
   --pill-border: rgba(148, 163, 184, 0.25);
   --bg-elevated: #0b1120;
   --bg-elevated-soft: #020617;
-  --accent: #f97316;
-  --accent-strong: #fb923c;
+  --accent: #f5c400;
+  --accent-strong: #ffe066;
   --border-subtle: rgba(148, 163, 184, 0.35);
   --spinner-track: rgba(148, 163, 184, 0.3);
   --text-primary: #e5e7eb;
   --text-muted: #9ca3af;
   --text-strong: #f9fafb;
   --btn-primary-border: rgba(248, 250, 252, 0.08);
-  --btn-primary-shadow: 0 10px 25px rgba(249, 115, 22, 0.45);
-  --btn-primary-shadow-hover: 0 16px 35px rgba(249, 115, 22, 0.55);
+  --btn-primary-shadow: 0 10px 25px rgba(245, 196, 0, 0.35);
+  --btn-primary-shadow-hover: 0 16px 35px rgba(245, 196, 0, 0.45);
   --btn-secondary-bg: rgba(15, 23, 42, 0.9);
   --btn-secondary-bg-hover: rgba(15, 23, 42, 1);
   --btn-secondary-border: rgba(148, 163, 184, 0.6);
@@ -62,16 +62,16 @@
   --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
   --bg-elevated-soft: #f8fafc;
-  --accent: #ea580c;
-  --accent-strong: #fb923c;
+  --accent: #ca8a04;
+  --accent-strong: #ffe066;
   --border-subtle: rgba(100, 116, 139, 0.3);
   --spinner-track: rgba(100, 116, 139, 0.3);
   --text-primary: #1e293b;
   --text-muted: #475569;
   --text-strong: #0f172a;
-  --btn-primary-border: rgba(194, 65, 12, 0.25);
-  --btn-primary-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
-  --btn-primary-shadow-hover: 0 12px 28px rgba(249, 115, 22, 0.4);
+  --btn-primary-border: rgba(161, 98, 7, 0.3);
+  --btn-primary-shadow: 0 8px 20px rgba(202, 138, 4, 0.3);
+  --btn-primary-shadow-hover: 0 12px 28px rgba(202, 138, 4, 0.4);
   --btn-secondary-bg: #ffffff;
   --btn-secondary-bg-hover: #f8fafc;
   --btn-secondary-border: rgba(100, 116, 139, 0.5);
@@ -154,14 +154,6 @@ body {
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
-}
-
-.app-logo {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* Cinzel, bundled so the title looks the same offline. SIL Open Font
@@ -701,7 +693,8 @@ body {
 }
 
 .btn-primary {
-  background: radial-gradient(circle at top left, var(--accent-strong), #f97316);
+  /* The gold of the CATAN logo, lit from the top */
+  background: linear-gradient(180deg, #ffe680 0%, #ffd400 55%, #f0b400 100%);
   border-color: var(--btn-primary-border);
   color: #0b1120;
   font-weight: 600;
@@ -1456,7 +1449,7 @@ body {
 /* Search matches */
 .rules-entry mark {
   border-radius: 3px;
-  background: rgba(249, 115, 22, 0.32);
+  background: rgba(245, 196, 0, 0.35);
   color: inherit;
 }
 
