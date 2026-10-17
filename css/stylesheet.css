@@ -730,21 +730,21 @@ body {
   font-size: 1rem;
 }
 
-/* Share, Rules and Settings in the header: bare icons in the accent color,
-   with a soft circle behind them on hover and press */
+/* Share, Rules and Settings in the header: round buttons ringed in the
+   accent color, which fill in a little on hover and press */
 .btn-header {
-  background: transparent;
+  border: 1.5px solid var(--accent);
+  background: var(--segment-track);
   color: var(--accent);
 }
 
-.btn-header svg {
-  width: 22px;
-  height: 22px;
+:root[data-theme="light"] .btn-header {
+  background: #ffffff;
 }
 
 .btn-header:hover:not(:disabled),
 .btn-header:active:not(:disabled) {
-  background: var(--segment-track);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* Visually hidden, still read by screen readers */
