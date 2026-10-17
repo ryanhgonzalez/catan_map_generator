@@ -730,15 +730,21 @@ body {
   font-size: 1rem;
 }
 
-/* Share and Settings in the header: separate round tinted buttons */
+/* Share, Rules and Settings in the header: bare icons in the accent color,
+   with a soft circle behind them on hover and press */
 .btn-header {
-  border: 1px solid var(--border-subtle);
-  background: var(--segment-track);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--accent);
 }
 
-.btn-header:hover:not(:disabled) {
-  border-color: var(--accent);
+.btn-header svg {
+  width: 22px;
+  height: 22px;
+}
+
+.btn-header:hover:not(:disabled),
+.btn-header:active:not(:disabled) {
+  background: var(--segment-track);
 }
 
 /* Visually hidden, still read by screen readers */
