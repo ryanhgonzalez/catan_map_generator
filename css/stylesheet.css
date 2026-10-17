@@ -141,8 +141,9 @@ body {
 /* --- Layout --- */
 
 .app-header {
-  /* Clear the status bar / notch when installed full-screen (viewport-fit) */
-  padding: max(0.9rem, env(safe-area-inset-top)) 1.25rem 0.6rem;
+  /* Clear the status bar / notch (viewport-fit), plus a gap so the logo
+     and buttons sit below the blur iOS puts under the status bar */
+  padding: max(0.9rem, calc(env(safe-area-inset-top) + 0.75rem)) 1.25rem 0.6rem;
 }
 
 .app-header-inner {
@@ -1566,7 +1567,7 @@ body {
   /* A tall board card: up to 520px, less on shorter phones so the header,
      pager and New board button still fit */
   .map-container {
-    height: min(520px, calc(100dvh - 248px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+    height: min(520px, calc(100dvh - 260px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
     min-height: 340px;
   }
 
