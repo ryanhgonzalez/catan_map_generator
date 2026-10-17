@@ -18,12 +18,14 @@
   --bg-elevated: #0b1120;
   --bg-elevated-soft: #020617;
   --accent: #f5c400;
-  --accent-strong: #ffe066;
   --border-subtle: rgba(148, 163, 184, 0.35);
   --spinner-track: rgba(148, 163, 184, 0.3);
   --text-primary: #e5e7eb;
   --text-muted: #9ca3af;
   --text-strong: #f9fafb;
+  /* The gold of the CATAN logo, lit from the top */
+  --btn-primary-bg: linear-gradient(180deg, #ffe680 0%, #ffd400 55%, #f0b400 100%);
+  --btn-primary-text: #0b1120;
   --btn-primary-border: rgba(248, 250, 252, 0.08);
   --btn-primary-shadow: 0 10px 25px rgba(245, 196, 0, 0.35);
   --btn-primary-shadow-hover: 0 16px 35px rgba(245, 196, 0, 0.45);
@@ -62,16 +64,19 @@
   --pill-border: rgba(100, 116, 139, 0.25);
   --bg-elevated: #ffffff;
   --bg-elevated-soft: #f8fafc;
-  --accent: #ca8a04;
-  --accent-strong: #ffe066;
+  /* Gold reads as mustard on white, so light mode takes the ink of the
+     logo's outline instead and keeps gold for the button's lettering */
+  --accent: #1e293b;
   --border-subtle: rgba(100, 116, 139, 0.3);
   --spinner-track: rgba(100, 116, 139, 0.3);
   --text-primary: #1e293b;
   --text-muted: #475569;
   --text-strong: #0f172a;
-  --btn-primary-border: rgba(161, 98, 7, 0.3);
-  --btn-primary-shadow: 0 8px 20px rgba(202, 138, 4, 0.3);
-  --btn-primary-shadow-hover: 0 12px 28px rgba(202, 138, 4, 0.4);
+  --btn-primary-bg: linear-gradient(180deg, #273449 0%, #111827 100%);
+  --btn-primary-text: #ffd84d;
+  --btn-primary-border: rgba(15, 23, 42, 0.9);
+  --btn-primary-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+  --btn-primary-shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.32);
   --btn-secondary-bg: #ffffff;
   --btn-secondary-bg-hover: #f8fafc;
   --btn-secondary-border: rgba(100, 116, 139, 0.5);
@@ -693,10 +698,9 @@ body {
 }
 
 .btn-primary {
-  /* The gold of the CATAN logo, lit from the top */
-  background: linear-gradient(180deg, #ffe680 0%, #ffd400 55%, #f0b400 100%);
+  background: var(--btn-primary-bg);
   border-color: var(--btn-primary-border);
-  color: #0b1120;
+  color: var(--btn-primary-text);
   font-weight: 600;
   box-shadow: var(--btn-primary-shadow);
 }
