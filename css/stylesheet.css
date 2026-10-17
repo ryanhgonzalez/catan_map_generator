@@ -162,21 +162,26 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-/* "CATAN" large over "BOARD GENERATOR" small */
+/* CATAN wordmark over "BOARD GENERATOR" small */
 .app-title {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  align-items: flex-start;
+  gap: 3px;
 }
 
+/* The wordmark's black outline disappears on the dark header, so a soft
+   shadow keeps the letters from looking flat */
 .app-title-main {
-  font-size: 1.32rem;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-strong);
+  display: block;
+  height: 30px;
+  width: auto;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+:root[data-theme="light"] .app-title-main {
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18));
 }
 
 .app-title-sub {
