@@ -22,8 +22,8 @@ Ryan Gonzalez for phones.
   them. Your boards are kept on the device until you clear them.
 - **Sharing.** Swipe the board up for a QR code and a link to it, so
   another phone at the table can open the same board.
-- **Rules.** The book button opens a short, searchable version of the
-  CATAN 5th edition rules, for the base game and Cities & Knights, with
+- **Rules.** The menu at the top opens a short, searchable version of
+  the CATAN 5th edition rules, for the base game and Cities & Knights, with
   links to the official rulebooks.
 - **Light and dark themes**, following the device or picked in Settings.
 
