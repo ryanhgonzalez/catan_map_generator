@@ -246,24 +246,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ----- Header menu -----
-// The menu button drops Rules and Settings down under it over a dimmed
-// page. A tap on the dimmed page, Esc, the back button or picking one of
-// them closes it.
+// The menu button drops Rules and Settings down under it. A tap anywhere
+// else, Esc, the back button or picking one of them closes it.
 
 document.addEventListener("DOMContentLoaded", () => {
   const header = document.querySelector(".app-header");
   const toggle = document.getElementById("menu-button");
   const items = document.getElementById("header-menu-items");
-  const dim = document.getElementById("menu-dim");
   let hideTimer = null;
 
   function openMenu() {
     if (toggle.getAttribute("aria-expanded") === "true") return;
     clearTimeout(hideTimer);
     items.hidden = false;
-    // Below the header, not at the top of the page (see .menu-dim)
-    dim.style.top = `${header.getBoundingClientRect().bottom}px`;
-    dim.hidden = false;
     header.classList.add("menu-shown");
     // Let the hidden state render first, so the buttons slide in
     void items.offsetWidth;
@@ -279,7 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hide once the buttons have faded out (see .header-menu-item)
     hideTimer = setTimeout(() => {
       items.hidden = true;
-      dim.hidden = true;
       header.classList.remove("menu-shown");
     }, prefersReducedMotion.matches ? 0 : 220);
     backClosed(closeMenu);
@@ -289,7 +283,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (toggle.getAttribute("aria-expanded") === "true") closeMenu();
     else openMenu();
   });
-  dim.addEventListener("click", closeMenu);
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".header-menu")) closeMenu();
+  });
   // Rules and Settings open their own pages (below) as the menu closes
   items.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", closeMenu);

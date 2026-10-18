@@ -146,8 +146,8 @@ body {
 }
 
 /* Above the board while the header menu shows (including fading out), so
-   the menu and its dimmed layer cover it. Only then: a swiped-off board
-   passes over the header. */
+   the menu covers it. Only then: a swiped-off board passes over the
+   header. */
 .app-header.menu-shown {
   z-index: 30;
 }
@@ -684,9 +684,6 @@ body {
 /* --- Buttons --- */
 
 .header-actions {
-  /* Above the dimmed layer while the menu is open */
-  position: relative;
-  z-index: 1;
   display: flex;
   gap: 0.5rem;
 }
@@ -755,7 +752,7 @@ body {
 
 /* --- Header menu --- */
 /* One round button that drops Rules and Settings down under it as round
-   buttons with labels, over a dimmed page (ui.js opens and closes it) */
+   buttons with labels (ui.js opens and closes it) */
 
 .header-menu {
   position: relative;
@@ -780,8 +777,7 @@ body {
   gap: 12px;
 }
 
-.header-menu-items[hidden],
-.menu-dim[hidden] {
+.header-menu-items[hidden] {
   display: none;
 }
 
@@ -851,26 +847,6 @@ body {
 .header-menu-item:focus-visible .header-menu-icon {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-/* Starts below the header (ui.js sets its top), never at the top of the
-   page: iOS 26 colors the status bar from a fixed layer there, and kept
-   this gray over Rules and Settings opened from the menu. Fades in over
-   its first 32px, so there's no hard edge under the header. */
-.menu-dim {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(rgba(2, 6, 23, 0), rgba(2, 6, 23, 0.5) 32px);
-  opacity: 0;
-  transition: opacity 160ms ease-out;
-}
-
-:root[data-theme="light"] .menu-dim {
-  background: linear-gradient(rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.28) 32px);
-}
-
-.app-header.menu-open .menu-dim {
-  opacity: 1;
 }
 
 /* Visually hidden, still read by screen readers */
@@ -1674,8 +1650,7 @@ body {
     animation: none !important;
   }
 
-  .header-menu-item,
-  .menu-dim {
+  .header-menu-item {
     transition: none;
   }
 }
