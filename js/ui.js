@@ -261,6 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (toggle.getAttribute("aria-expanded") === "true") return;
     clearTimeout(hideTimer);
     items.hidden = false;
+    // Below the header, not at the top of the page (see .menu-dim)
+    dim.style.top = `${header.getBoundingClientRect().bottom}px`;
     dim.hidden = false;
     header.classList.add("menu-shown");
     // Let the hidden state render first, so the buttons slide in
@@ -270,24 +272,16 @@ document.addEventListener("DOMContentLoaded", () => {
     backOpened(closeMenu);
   }
 
-  function hideMenu() {
-    clearTimeout(hideTimer);
-    items.hidden = true;
-    dim.hidden = true;
-    header.classList.remove("menu-shown");
-  }
-
-  // `instant` skips the fade (true only, not a click event)
-  function closeMenu(instant) {
+  function closeMenu() {
     if (toggle.getAttribute("aria-expanded") !== "true") return;
     header.classList.remove("menu-open");
     toggle.setAttribute("aria-expanded", "false");
-    if (instant === true || prefersReducedMotion.matches) {
-      hideMenu();
-    } else {
-      // Hide once the buttons have faded out (see .header-menu-item)
-      hideTimer = setTimeout(hideMenu, 220);
-    }
+    // Hide once the buttons have faded out (see .header-menu-item)
+    hideTimer = setTimeout(() => {
+      items.hidden = true;
+      dim.hidden = true;
+      header.classList.remove("menu-shown");
+    }, prefersReducedMotion.matches ? 0 : 220);
     backClosed(closeMenu);
   }
 
@@ -296,10 +290,9 @@ document.addEventListener("DOMContentLoaded", () => {
     else openMenu();
   });
   dim.addEventListener("click", closeMenu);
-  // Rules and Settings open their own pages (below) as the menu closes,
-  // at once rather than fading under the page
+  // Rules and Settings open their own pages (below) as the menu closes
   items.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("click", () => closeMenu(true));
+    button.addEventListener("click", closeMenu);
   });
 
   document.addEventListener("keydown", (event) => {

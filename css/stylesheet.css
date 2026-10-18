@@ -140,21 +140,6 @@ body {
 
 /* --- Layout --- */
 
-/* Behind the status bar when the app runs full-screen (no height
-   otherwise). iOS 26 colors the status bar from a solid fixed box at the
-   top of the page; without one it sampled whatever was there, and kept the
-   menu's dimmed gray over Rules and Settings, even after a theme change. */
-.status-bar-fill {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-  height: env(safe-area-inset-top);
-  background-color: var(--page-top);
-  pointer-events: none;
-}
-
 .app-header {
   /* Clear the status bar / notch (viewport-fit), plus a gap so the logo
      and buttons sit below the blur iOS puts under the status bar */
@@ -870,17 +855,20 @@ body {
   outline-offset: 2px;
 }
 
-/* Starts below the status bar, which keeps .status-bar-fill's color */
+/* Starts below the header (ui.js sets its top), never at the top of the
+   page: iOS 26 colors the status bar from a fixed layer there, and kept
+   this gray over Rules and Settings opened from the menu. Fades in over
+   its first 32px, so there's no hard edge under the header. */
 .menu-dim {
   position: fixed;
-  inset: env(safe-area-inset-top) 0 0;
-  background: rgba(2, 6, 23, 0.5);
+  inset: 0;
+  background: linear-gradient(rgba(2, 6, 23, 0), rgba(2, 6, 23, 0.5) 32px);
   opacity: 0;
   transition: opacity 160ms ease-out;
 }
 
 :root[data-theme="light"] .menu-dim {
-  background: rgba(15, 23, 42, 0.28);
+  background: linear-gradient(rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.28) 32px);
 }
 
 .app-header.menu-open .menu-dim {
@@ -1773,9 +1761,6 @@ body {
     border: 0;
     box-shadow: none;
     background: var(--bg-page);
-    /* Solid under the gradient, like body, for browsers that tint their
-       bars from the page's color */
-    background-color: var(--page-top);
     padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom));
   }
 
