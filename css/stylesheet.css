@@ -140,6 +140,21 @@ body {
 
 /* --- Layout --- */
 
+/* Behind the status bar when the app runs full-screen (no height
+   otherwise). iOS 26 colors the status bar from a solid fixed box at the
+   top of the page; without one it sampled whatever was there, and kept the
+   menu's dimmed gray over Rules and Settings, even after a theme change. */
+.status-bar-fill {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  height: env(safe-area-inset-top);
+  background-color: var(--page-top);
+  pointer-events: none;
+}
+
 .app-header {
   /* Clear the status bar / notch (viewport-fit), plus a gap so the logo
      and buttons sit below the blur iOS puts under the status bar */
@@ -855,9 +870,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Starts below the status bar: iOS tints the status bar from a fixed
-   layer touching the top of the screen, and kept this gray over Rules
-   and Settings opened from the menu */
+/* Starts below the status bar, which keeps .status-bar-fill's color */
 .menu-dim {
   position: fixed;
   inset: env(safe-area-inset-top) 0 0;
@@ -1760,6 +1773,9 @@ body {
     border: 0;
     box-shadow: none;
     background: var(--bg-page);
+    /* Solid under the gradient, like body, for browsers that tint their
+       bars from the page's color */
+    background-color: var(--page-top);
     padding: 0 1rem calc(1.5rem + env(safe-area-inset-bottom));
   }
 
