@@ -36,7 +36,6 @@
   --segment-selected: #1e293b;
   --switch-off: rgba(148, 163, 184, 0.45);
   --divider: rgba(148, 163, 184, 0.2);
-  --nav-bg: rgba(11, 17, 32, 0.92);
   --nav-border: rgba(148, 163, 184, 0.25);
   --level-great: #4ade80;
   --dot-past: rgba(229, 231, 235, 0.55);
@@ -84,7 +83,6 @@
   --segment-selected: #ffffff;
   --switch-off: rgba(100, 116, 139, 0.45);
   --divider: rgba(100, 116, 139, 0.2);
-  --nav-bg: rgba(255, 255, 255, 0.92);
   --nav-border: rgba(100, 116, 139, 0.25);
   --level-great: #15803d;
   --dot-past: rgba(30, 41, 59, 0.5);
@@ -1770,9 +1768,10 @@ body {
     margin: 0 -1rem;
     padding-left: 1rem;
     padding-right: 1rem;
-    /* Frosted like the nav bar, since the page scrolls under it */
-    background: var(--nav-bg);
-    backdrop-filter: blur(12px);
+    /* Solid, not frosted: iOS colors the status bar from the bar at the
+       top of the page only when it can read one color from it, and
+       otherwise kept the old color over a theme change */
+    background: var(--bg-elevated);
   }
 
   .settings-dialog .icon-back {
