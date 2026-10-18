@@ -855,9 +855,12 @@ body {
   outline-offset: 2px;
 }
 
+/* Starts below the status bar: iOS tints the status bar from a fixed
+   layer touching the top of the screen, and kept this gray over Rules
+   and Settings opened from the menu */
 .menu-dim {
   position: fixed;
-  inset: 0;
+  inset: env(safe-area-inset-top) 0 0;
   background: rgba(2, 6, 23, 0.5);
   opacity: 0;
   transition: opacity 160ms ease-out;

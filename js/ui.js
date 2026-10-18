@@ -296,10 +296,8 @@ document.addEventListener("DOMContentLoaded", () => {
     else openMenu();
   });
   dim.addEventListener("click", closeMenu);
-  // Rules and Settings open their own pages (below) as the menu closes.
-  // The dimmed layer goes at once, not fading under the page: iOS tints
-  // the status bar from a fixed layer at the top as the page opens, and
-  // keeps that gray while it stays open.
+  // Rules and Settings open their own pages (below) as the menu closes,
+  // at once rather than fading under the page
   items.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => closeMenu(true));
   });
