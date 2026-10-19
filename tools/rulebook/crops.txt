@@ -1,0 +1,124 @@
+# name  pdf  page  x0 y0 x1 y1  (pixels at 100 dpi)
+
+# ----- Base game: Game Overview (page 16) -----
+base-overview-terrain   base 16   40 240 412 472
+base-overview-map       base 16  245 545 575 1010
+
+# ----- Base game: Game Rules -----
+base-illus-a            base 3   250 70 702 578  poly=62,40;368,40;456,265;377,503;60,503;-10,265 keep=100,0,214,33 bg=#fff9c3
+base-resource-production base 3  60 585 785 700
+base-illus-b            base 3   585 785 782 1012
+base-illus-c            base 4   243 150 402 316
+base-illus-d            base 4   243 330 402 490
+base-cost-road          base 4   660 735 778 822
+base-cost-settlement    base 5   275 95 405 192
+base-cost-city          base 5   270 366 405 472
+base-cost-devcard       base 5   268 562 405 680
+base-card-knight        base 5   688 363 779 488
+base-card-monopoly      base 5   688 538 779 652
+base-card-library       base 5   688 713 779 828
+
+# ----- Base game: Almanac -----
+base-illus-e            base 6   425 298 777 566
+base-city               base 6   335 858 408 935
+base-desert             base 7   270 142 404 284
+base-devcard-back       base 7   303 324 408 458
+base-vp-cards           base 7   253 593 408 748
+base-illus-f            base 7   420 70 787 305
+base-harbor             base 8   255 508 402 670
+base-illus-g            base 8   188 766 402 992
+base-illus-h            base 8   425 578 777 765
+base-card-largest-army  base 8   648 838 779 997
+base-card-longest-road  base 9   275 95 400 252
+base-illus-i            base 9   62 435 400 750
+base-maritime-4to1      base 9   655 200 780 282
+base-harbor-generic     base 9   645 428 778 570
+base-harbor-special     base 9   645 618 778 762
+base-number-token       base 10  330 118 407 192
+base-illus-paths        base 10  283 455 402 582
+base-card-road-building base 10  330 658 407 752
+base-card-year-of-plenty base 10 330 771 407 872
+base-card-monopoly-2    base 10  330 883 407 990
+base-resource-cards     base 10  688 103 782 222
+base-illus-j            base 10  425 678 777 842
+base-illus-k            base 11  222 238 402 452
+base-robber             base 11  306 568 396 662
+base-illus-l            base 11  50 758 402 932
+base-settlement         base 11  700 712 782 812
+base-illus-m            base 12  50 168 402 442
+base-illus-n            base 12  178 578 402 818
+base-round-one          base 12  652 83 782 202
+base-illus-o            base 12  578 818 782 1012
+base-illus-p            base 13  203 73 402 182
+base-illus-q            base 13  208 258 402 442
+base-illus-r            base 13  428 672 782 1012
+base-vp-cards-2         base 14  222 488 412 692
+base-vp-chart           base 14  428 462 782 962
+
+# ----- Base game: 5-6 Player Extension -----
+b56-components          b56 2    30 105 507 487
+b56-sea-frames          b56 3    267 390 514 642
+b56-random-harbor       b56 4    428 568 507 648
+b56-beginner-setup      b56 5    22 48 514 342
+b56-token-order         b56 5    197 352 514 642
+b56-markers             b56 6    468 238 512 345
+b56-paired-players      b56 6    33 452 507 642
+
+# ----- Cities & Knights: Game Rules -----
+ck-illus-a              ck 2    628 676 777 935
+ck-illus-b              ck 3    222 70 402 200
+ck-illus-c              ck 3    236 326 402 592
+ck-city-wall            ck 3    642 293 777 367
+ck-flipchart            ck 3    46 823 404 957
+ck-barbarian-tile       ck 3    613 803 779 1002
+ck-illus-d              ck 4    48 378 582 992
+ck-event-dice           ck 5    316 563 404 652
+ck-illus-f              ck 5    593 73 779 252
+ck-illus-g              ck 5    626 578 779 1022
+ck-illus-h              ck 6    220 706 404 997
+ck-illus-i              ck 7    48 243 402 507
+ck-illus-j              ck 7    423 523 779 757
+ck-metropolis           ck 8    658 63 779 202
+ck-illus-k              ck 8    156 250 402 497
+ck-illus-l              ck 8    48 853 402 1014
+ck-illus-m              ck 9    198 73 402 297
+ck-illus-n              ck 9    550 503 779 737
+ck-illus-o              ck 10   206 532 402 762
+ck-illus-p              ck 10   558 243 779 457  poly=23,0;221,0;221,214;0,214;0,82;7,82;7,58;23,58 bg=#fdf9b5
+ck-illus-q              ck 10   573 768 779 987
+ck-barbarian-attack     ck 11   253 83 412 247
+ck-defender-card        ck 11   658 378 779 727
+ck-merchant             ck 12   60 288 402 502
+ck-progress-cards       ck 12   423 73 779 1002
+ck-illus-r              ck 13   423 203 779 472
+
+# ----- Cities & Knights: Almanac -----
+ck-card-alchemist       ck 14   60 308 189 497
+ck-card-crane           ck 14   60 544 189 732
+ck-card-engineer        ck 14   60 780 189 967
+ck-card-inventor        ck 14   636 308 765 497
+ck-card-irrigation      ck 14   636 544 765 732
+ck-card-medicine        ck 14   636 780 765 967
+ck-card-mining          ck 15   60 93 189 282
+ck-card-printer         ck 15   60 308 189 502
+ck-card-road-building   ck 15   60 544 189 732
+ck-card-smith           ck 15   60 780 189 967
+ck-city-development     ck 15   426 78 779 557
+ck-card-bishop          ck 16   60 308 189 497
+ck-card-constitution    ck 16   60 544 189 732
+ck-card-deserter        ck 16   60 780 189 967
+ck-card-diplomat        ck 16   636 308 765 497
+ck-card-intrigue        ck 16   636 780 765 967
+ck-card-saboteur        ck 17   60 93 189 282
+ck-card-spy             ck 17   60 308 189 497
+ck-card-warlord         ck 17   60 544 189 732
+ck-card-wedding         ck 17   60 780 189 967
+ck-card-commercial-harbor ck 17 636 308 765 497
+ck-card-master-merchant ck 17   636 544 765 732
+ck-card-merchant        ck 17   636 780 765 967
+ck-card-merchant-fleet  ck 18   60 308 189 497
+ck-card-resource-monopoly ck 18 60 544 189 732
+ck-card-trade-monopoly  ck 18   60 780 189 967
+
+# ----- Cities & Knights: 5-6 Player Extension -----
+ck56-markers            ck56 1  418 238 502 402
