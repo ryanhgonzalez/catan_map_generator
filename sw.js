@@ -1,7 +1,8 @@
 // sw.js – Offline support. The page, styles and scripts are fetched from
 // the network first so a deploy always arrives as a matching set; the
-// cached copies are only used offline. Tile images and icons rarely change,
-// so they come from the cache and refresh in the background.
+// cached copies are only used offline. Tile images, icons and the rulebook's
+// illustrations rarely change, so they come from the cache and refresh in
+// the background.
 
 // Bump to drop caches from older versions. v1 could keep serving a stale
 // page forever (navigations were stored under a different key than "./").
@@ -34,13 +35,20 @@ const PRECACHE_URLS = [
   "icons/favicon-16.png"
 ];
 
+// The rulebook's pages and illustrations (rulebook/precache.js lists them),
+// so the full rulebook works offline at the table too
+importScripts("rulebook/precache.js");
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       // "reload" skips the HTTP cache so the precache is the deployed version
       .then((cache) => cache.addAll(
         PRECACHE_URLS.map((url) => new Request(url, { cache: "reload" }))
-      ))
+      ).then(() => Promise.allSettled(
+        // One that fails to download just loads from the network later
+        self.RULEBOOK_FILES.map((url) => cache.add(new Request(url, { cache: "reload" })))
+      )))
       .then(() => self.skipWaiting())
   );
 });
@@ -65,7 +73,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, PAGE_KEY));
-  } else if (/\.(png|ico)$/.test(url.pathname)) {
+  } else if (/\.(png|ico|webp)$/.test(url.pathname)) {
     event.respondWith(staleWhileRevalidate(event, request));
   } else {
     event.respondWith(networkFirst(request, request));

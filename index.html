@@ -415,6 +415,10 @@
       <!-- Hidden while searching -->
       <div class="rules-intro">
         <div class="settings-group">
+          <button class="settings-row-button rulebook-open" type="button" data-book="base" aria-haspopup="dialog">
+            <span class="switch-text">Full rulebook<small>Word for word, with illustrations</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
           <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2021-06/catan_base_rules_2020_200707.pdf" target="_blank" rel="noopener">
             <span class="switch-text">Official rulebook<small>Game Rules &amp; Almanac · PDF on catan.com</small></span>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
@@ -682,6 +686,10 @@
     <div class="rules-game" data-game="ck" hidden>
       <div class="rules-intro">
         <div class="settings-group">
+          <button class="settings-row-button rulebook-open" type="button" data-book="ck" aria-haspopup="dialog">
+            <span class="switch-text">Full rulebook<small>Word for word, with illustrations</small></span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
           <a class="settings-row-button" href="https://www.catan.com/sites/default/files/2021-06/catan_c_k_2020_rule_book_200708.pdf" target="_blank" rel="noopener">
             <span class="switch-text">Official rulebook<small>Cities &amp; Knights Game Rules &amp; Almanac · PDF on catan.com</small></span>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>
@@ -1127,6 +1135,68 @@
       </div>
     </div>
     <p id="rules-empty" class="rules-empty" hidden></p>
+  </dialog>
+
+  <!-- Rulebook: the official rulebooks word for word, with their
+       illustrations, opened from the Rules page. Each book loads from
+       rulebook/ the first time it's shown. -->
+  <dialog id="rulebook-dialog" class="settings-dialog rulebook-dialog" aria-labelledby="rulebook-title">
+    <div class="settings-header">
+      <button id="rulebook-close" class="btn btn-secondary btn-icon" type="button" aria-label="Close rulebook">
+        <svg class="icon-back" viewBox="0 0 24 24" width="22" height="22" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+        <svg class="icon-close" viewBox="0 0 24 24" width="20" height="20" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+      <div class="rules-heading">
+        <h2 id="rulebook-title" class="settings-title">Rulebook</h2>
+        <span id="rulebook-subtitle" class="rules-subtitle">CATAN, word for word</span>
+      </div>
+    </div>
+
+    <label class="rules-search">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3" />
+      </svg>
+      <span class="sr-only">Search the rulebook</span>
+      <input id="rulebook-search" type="search" placeholder="Search the rulebook" autocomplete="off" />
+    </label>
+
+    <div class="segmented rules-games" role="radiogroup" aria-label="Rulebook">
+      <label class="segment">
+        <input type="radio" name="rulebook-book" value="base" checked />
+        <span>Base game</span>
+      </label>
+      <label class="segment">
+        <input type="radio" name="rulebook-book" value="ck" />
+        <span>Cities &amp; Knights</span>
+      </label>
+    </div>
+
+    <div id="rulebook-books" class="rulebook-books">
+      <div class="rulebook-book" data-book="base"></div>
+      <div class="rulebook-book" data-book="ck" hidden></div>
+    </div>
+    <p id="rulebook-status" class="rules-empty" hidden></p>
+
+    <!-- After following a cross-reference, back to where you were -->
+    <button id="rulebook-return" class="rulebook-return" type="button" tabindex="-1"></button>
+  </dialog>
+
+  <!-- An illustration from the rulebook, full screen -->
+  <dialog id="rulebook-viewer" class="rulebook-viewer" aria-label="Illustration">
+    <img id="rulebook-viewer-img" alt="" />
+    <p id="rulebook-viewer-caption"></p>
+    <button id="rulebook-viewer-close" class="rulebook-viewer-close" type="button" aria-label="Close illustration">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"
+        stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
+    </button>
   </dialog>
 
 

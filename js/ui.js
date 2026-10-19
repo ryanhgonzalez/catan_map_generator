@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // Exit animations per dialog (see "Dialog transitions" in the CSS)
-const DIALOG_EXIT_ANIMATIONS = ["slide-out-right", "slide-out-down", "pop-out"];
+const DIALOG_EXIT_ANIMATIONS = ["slide-out-right", "slide-out-down", "pop-out", "viewer-out"];
 
 /**
  * Close a modal <dialog> after its exit animation. Browsers animate a
@@ -481,6 +481,210 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   if (savedGame === "ck") showGame("ck");
+});
+
+// ----- Rulebook page -----
+// The official rulebooks word for word, opened from "Full rulebook" on the
+// Rules page. Each book loads from rulebook/<book>.html the first time it
+// shows. A ✷ cross-reference jumps to its entry, and a button at the
+// bottom goes back to where you were. Tapping an illustration shows it
+// full screen.
+
+var RULEBOOK_TITLES = {
+  base: "CATAN, word for word",
+  ck: "Cities & Knights, word for word"
+};
+
+/**
+ * Wrap each match of query (lowercase) in the element's text in <mark>,
+ * leaving its links and other markup as they are.
+ */
+function highlightMatches(element, query) {
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const text = node.nodeValue;
+    const lower = text.toLowerCase();
+    let at = lower.indexOf(query);
+    if (at === -1) return;
+    const parts = document.createDocumentFragment();
+    let from = 0;
+    while (at !== -1) {
+      parts.append(text.slice(from, at));
+      const mark = document.createElement("mark");
+      mark.textContent = text.slice(at, at + query.length);
+      parts.append(mark);
+      from = at + query.length;
+      at = lower.indexOf(query, from);
+    }
+    parts.append(text.slice(from));
+    node.replaceWith(parts);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const dialog = document.getElementById("rulebook-dialog");
+  const subtitle = document.getElementById("rulebook-subtitle");
+  const search = document.getElementById("rulebook-search");
+  const status = document.getElementById("rulebook-status");
+  const returnButton = document.getElementById("rulebook-return");
+  const books = Array.from(dialog.querySelectorAll(".rulebook-book"));
+  const bookChoices = Array.from(dialog.querySelectorAll('input[name="rulebook-book"]'));
+  const viewer = document.getElementById("rulebook-viewer");
+  const viewerImg = document.getElementById("rulebook-viewer-img");
+  const viewerCaption = document.getElementById("rulebook-viewer-caption");
+  // Each loaded book's entries, with their markup kept to re-highlight
+  const entriesByBook = {};
+  let current = "base";
+  // Where a cross-reference was followed from
+  let returnTo = null;
+
+  const bookEl = (book) => books.find((el) => el.dataset.book === book);
+
+  async function loadBook(book) {
+    if (entriesByBook[book]) return;
+    const el = bookEl(book);
+    status.hidden = false;
+    status.textContent = "Loading the rulebook…";
+    try {
+      const response = await fetch(`rulebook/${book}.html`);
+      if (!response.ok) throw new Error(response.status);
+      el.innerHTML = await response.text();
+      entriesByBook[book] = Array.from(el.querySelectorAll(".rulebook-entry")).map((entry) => ({
+        entry: entry,
+        html: entry.innerHTML,
+        text: entry.textContent.toLowerCase()
+      }));
+      status.hidden = true;
+    } catch (err) {
+      status.textContent = "The rulebook couldn’t load. Check your connection and try again.";
+    }
+  }
+
+  async function showBook(book) {
+    current = book;
+    books.forEach((el) => { el.hidden = el.dataset.book !== book; });
+    bookChoices.forEach((input) => { input.checked = input.value === book; });
+    subtitle.textContent = RULEBOOK_TITLES[book];
+    hideReturn();
+    await loadBook(book);
+    applySearch();
+  }
+
+  function applySearch() {
+    const entries = entriesByBook[current];
+    if (!entries) return;
+    const el = bookEl(current);
+    const query = search.value.trim().toLowerCase();
+    dialog.classList.toggle("is-searching", query !== "");
+    let found = 0;
+    entries.forEach((item) => {
+      const match = !query || item.text.includes(query);
+      item.entry.hidden = !match;
+      item.entry.innerHTML = item.html;
+      if (match && query) {
+        found += 1;
+        highlightMatches(item.entry, query);
+      }
+    });
+    // Chapter titles and letters show only with a matching entry under them
+    el.querySelectorAll(".rulebook-chapter").forEach((chapter) => {
+      chapter.hidden = !chapter.querySelector(".rulebook-entry:not([hidden])");
+    });
+    el.querySelectorAll(".rulebook-letter").forEach((letter) => {
+      let next = letter.nextElementSibling;
+      let any = false;
+      while (next && !next.classList.contains("rulebook-letter")) {
+        if (next.classList.contains("rulebook-entry") && !next.hidden) any = true;
+        next = next.nextElementSibling;
+      }
+      letter.hidden = !any;
+    });
+    status.hidden = !query || found > 0;
+    if (query && found === 0) status.textContent = `Nothing in the rulebook matches “${search.value.trim()}”.`;
+  }
+
+  function hideReturn() {
+    returnTo = null;
+    returnButton.classList.remove("is-shown");
+  }
+
+  // Scroll an entry or chapter to the top, below the sticky header
+  function jumpTo(target) {
+    const header = dialog.querySelector(".settings-header");
+    const top = target.getBoundingClientRect().top - dialog.getBoundingClientRect().top +
+      dialog.scrollTop - header.offsetHeight - 12;
+    dialog.scrollTo({ top: top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
+    target.classList.remove("is-flashing");
+    void target.offsetWidth;
+    target.classList.add("is-flashing");
+  }
+
+  dialog.addEventListener("click", (event) => {
+    const zoom = event.target.closest(".rulebook-zoom");
+    if (zoom) {
+      const img = zoom.querySelector("img");
+      viewerImg.src = img.src;
+      viewerImg.alt = img.alt;
+      viewerCaption.textContent = img.alt;
+      viewer.showModal();
+      return;
+    }
+    const link = event.target.closest('.rulebook-book a[href^="#"]');
+    if (!link) return;
+    event.preventDefault();
+    // A link found while searching leads into the whole book again
+    if (search.value) {
+      search.value = "";
+      applySearch();
+    }
+    const target = document.getElementById(link.getAttribute("href").slice(1));
+    if (!target) return;
+    const from = link.closest(".rulebook-entry");
+    returnTo = { top: dialog.scrollTop };
+    returnButton.textContent = from ? `← Back to ${from.dataset.title}` : "← Back to contents";
+    returnButton.classList.add("is-shown");
+    returnButton.tabIndex = 0;
+    jumpTo(target);
+  });
+
+  returnButton.addEventListener("click", () => {
+    if (returnTo) {
+      dialog.scrollTo({ top: returnTo.top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
+    }
+    hideReturn();
+    returnButton.tabIndex = -1;
+  });
+
+  bookChoices.forEach((input) => {
+    input.addEventListener("change", () => {
+      showBook(input.value);
+      dialog.scrollTo({ top: 0 });
+    });
+  });
+  search.addEventListener("input", () => {
+    hideReturn();
+    applySearch();
+  });
+
+  document.querySelectorAll(".rulebook-open").forEach((button) => {
+    button.addEventListener("click", () => {
+      search.value = "";
+      dialog.showModal();
+      dialog.scrollTop = 0;
+      showBook(button.dataset.book);
+    });
+  });
+  $("#rulebook-close").click(() => closeDialog(dialog));
+  setUpDialogClosing(dialog);
+
+  // The illustration viewer closes with a tap anywhere, Esc or back
+  viewer.addEventListener("click", () => closeDialog(viewer));
+  viewer.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialog(viewer);
+  });
 });
 
 // When DOM is ready, run init() from catan.js. It hides the loading
