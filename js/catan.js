@@ -1088,27 +1088,42 @@ function prepareMove(kind) {
 
 /**
  * Draw a board state onto the card underneath, with its balance pill.
- * Drawing goes through globals (context, hex size), so they're swapped to
- * a throwaway map and restored after.
+ * Drawing goes through globals (context, canvas box, hex size), so they're
+ * swapped to a throwaway map and restored after.
  */
 function showOnBackCard(state) {
     const back = document.getElementById("map-back");
     const canvas = back.querySelector("canvas");
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(canvas.clientWidth * dpr);
-    canvas.height = Math.round(canvas.clientHeight * dpr);
 
     const map = new CatanMap();
     loadStateIntoMap(map, state);
 
-    const saved = [drawingContext, size, dx, dy, lineWidth];
+    // Fill the pill before measuring: the canvas gets the card's height
+    // above it, so sizing it first (while the pill is still empty, or
+    // wrapped for another board) would squash the board until the top card
+    // takes over
+    fillBalancePill(back.querySelector(".board-balance"), map.getBalance());
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+
+    // Laid out for this canvas's box, not the top card's, so it matches
+    // what the top card draws once it has this board
+    const saved = [drawingContext, size, dx, dy, lineWidth,
+        canvasWidth, canvasHeight, canvasCenterX, canvasCenterY];
     drawingContext = canvas.getContext("2d");
     drawingContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvasWidth = width;
+    canvasHeight = height;
+    canvasCenterX = width / 2;
+    canvasCenterY = height / 2;
     map.resize();
     map.draw();
-    [drawingContext, size, dx, dy, lineWidth] = saved;
-
-    fillBalancePill(back.querySelector(".board-balance"), map.getBalance());
+    [drawingContext, size, dx, dy, lineWidth,
+        canvasWidth, canvasHeight, canvasCenterX, canvasCenterY] = saved;
 }
 
 // ----- Springs -----
