@@ -43,7 +43,8 @@ PDFS = {
 # crops.txt lines: name pdfkey page x0 y0 x1 y1   (pixels at 100 dpi)
 sizes = {}
 for line in open(os.path.join(src_dir, "crops.txt")):
-    line = line.split("#")[0].strip()
+    # A comment starts a line or follows a space, so bg=#fff48a stays a color
+    line = re.split(r"(?:^|\s)#", line)[0].strip()
     if not line:
         continue
     fields = line.split()

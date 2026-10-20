@@ -2,57 +2,57 @@
 
 # ----- Base game: Game Overview (page 16) -----
 base-overview-terrain   base 16   40 240 412 472
-base-overview-map       base 16  245 545 575 1010
+base-overview-map       base 16  140 539 688 1015  poly=2,238;139,2;408,2;546,238;408,474;139,474 bg=#fff387
 
 # ----- Base game: Game Rules -----
-base-illus-a            base 3   250 70 702 578  poly=62,40;368,40;456,265;377,503;60,503;-10,265 keep=100,0,214,33 bg=#fff9c3
+base-illus-a            base 3   197 66 745 578  poly=2,274;139,38;408,38;546,274;408,511;139,511 keep=153,4,267,37 bg=#fff9c3
 base-resource-production base 3  60 585 785 700
 base-illus-b            base 3   585 785 782 1012
 base-illus-c            base 4   243 150 402 316
 base-illus-d            base 4   243 330 402 490
-base-cost-road          base 4   660 735 778 822
-base-cost-settlement    base 5   275 95 405 192
-base-cost-city          base 5   270 366 405 472
-base-cost-devcard       base 5   268 562 405 680
-base-card-knight        base 5   688 363 779 488
-base-card-monopoly      base 5   688 538 779 652
-base-card-library       base 5   688 713 779 828
+base-cost-road          base 4   660 735 778 837
+base-cost-settlement    base 5   275 95 405 199
+base-cost-city          base 5   270 355 405 472
+base-cost-devcard       base 5   268 562 405 686
+base-card-knight        base 5   688 363 779 497
+base-card-monopoly      base 5   688 538 779 672
+base-card-library       base 5   688 713 779 849
 
 # ----- Base game: Almanac -----
 base-illus-e            base 6   425 298 777 566
 base-city               base 6   335 858 408 935
-base-desert             base 7   270 142 404 284
+base-desert             base 7   254 129 406 298  poly=76,0;150,44;150,125;76,168;2,125;2,44 bg=#fff48a
 base-devcard-back       base 7   303 324 408 458
-base-vp-cards           base 7   253 593 408 748
-base-illus-f            base 7   420 70 787 305
+base-vp-cards           base 7   253 593 408 775
+base-illus-f            base 7   420 70 787 311
 base-harbor             base 8   255 508 402 670
 base-illus-g            base 8   188 766 402 992
 base-illus-h            base 8   425 578 777 765
-base-card-largest-army  base 8   648 838 779 997
-base-card-longest-road  base 9   275 95 400 252
-base-illus-i            base 9   62 435 400 750
-base-maritime-4to1      base 9   655 200 780 282
+base-card-largest-army  base 8   644 838 779 997
+base-card-longest-road  base 9   271 95 400 252
+base-illus-i            base 9   57 435 400 750
+base-maritime-4to1      base 9   655 200 780 299
 base-harbor-generic     base 9   645 428 778 570
 base-harbor-special     base 9   645 618 778 762
 base-number-token       base 10  330 118 407 192
-base-illus-paths        base 10  283 455 402 582
-base-card-road-building base 10  330 658 407 752
-base-card-year-of-plenty base 10 330 771 407 872
+base-illus-paths        base 10  283 455 402 612
+base-card-road-building base 10  330 658 407 764
+base-card-year-of-plenty base 10 330 771 407 878
 base-card-monopoly-2    base 10  330 883 407 990
-base-resource-cards     base 10  688 103 782 222
-base-illus-j            base 10  425 678 777 842
+base-resource-cards     base 10  688 103 782 244
+base-illus-j            base 10  425 678 777 850
 base-illus-k            base 11  222 238 402 452
-base-robber             base 11  306 568 396 662
+base-robber             base 11  306 568 407 677
 base-illus-l            base 11  50 758 402 932
 base-settlement         base 11  700 712 782 812
 base-illus-m            base 12  50 168 402 442
 base-illus-n            base 12  178 578 402 818
-base-round-one          base 12  652 83 782 202
+base-round-one          base 12  652 83 786 204
 base-illus-o            base 12  578 818 782 1012
-base-illus-p            base 13  203 73 402 182
-base-illus-q            base 13  208 258 402 442
+base-illus-p            base 13  203 73 402 187
+base-illus-q            base 13  208 258 402 449
 base-illus-r            base 13  428 672 782 1012
-base-vp-cards-2         base 14  222 488 412 692
+base-vp-cards-2         base 14  222 488 412 704
 base-vp-chart           base 14  428 462 782 962
 
 # ----- Base game: 5-6 Player Extension -----
