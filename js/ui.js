@@ -687,6 +687,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (trail.length) backLabel.textContent = labelFor(trail[trail.length - 1].state);
   }
 
+  // Slide the view now showing in, from the right going forward (from = 1)
+  // or the left coming back (-1), with the header's back button and page
+  function slideIn(from) {
+    if (prefersReducedMotion.matches) return;
+    const view = [indexView, entryView, costsView].find((el) => !el.hidden);
+    const timing = { duration: 300, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" };
+    view.animate([
+      { transform: `translateX(${from * 56}px)`, opacity: 0 },
+      { transform: "none", opacity: 1 }
+    ], timing);
+    dialog.querySelectorAll(".settings-header > :not([hidden])").forEach((el) => {
+      el.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+    });
+  }
+
   // Show something new, with Back (and the device's back) returning here
   function go(state) {
     const step = { state: shown, scroll: dialog.scrollTop };
@@ -697,6 +712,7 @@ document.addEventListener("DOMContentLoaded", () => {
       shown = step.state;
       render();
       dialog.scrollTop = step.scroll;
+      slideIn(-1);
       backClosed(step.back);
     };
     trail.push(step);
@@ -704,13 +720,16 @@ document.addEventListener("DOMContentLoaded", () => {
     shown = state;
     render();
     dialog.scrollTop = 0;
+    slideIn(1);
   }
 
-  // Previous and Next replace the entry showing, so Back skips past them
-  function replace(state) {
+  // Previous and Next replace the entry showing, so Back skips past them;
+  // it slides in from the side it comes from
+  function replace(state, from) {
     shown = state;
     render();
     dialog.scrollTop = 0;
+    slideIn(from);
   }
 
   // ----- Illustrations -----
@@ -796,7 +815,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const opener = event.target.closest("[data-entry]");
     if (!opener || !opener.dataset.entry) return;
     if (opener === prevButton || opener === nextButton) {
-      replace({ view: "entry", id: opener.dataset.entry });
+      replace({ view: "entry", id: opener.dataset.entry }, opener === nextButton ? 1 : -1);
     } else {
       go({ view: "entry", id: opener.dataset.entry });
     }
