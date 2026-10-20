@@ -1562,48 +1562,6 @@ body {
   color: var(--text-muted);
 }
 
-/* The Almanac's letters down the right edge while browsing (ui.js), in
-   the dialog's side padding beside the rows. Sliding along it jumps
-   letter to letter, so it takes the touch instead of scrolling. */
-.rulebook-jump {
-  position: fixed;
-  top: calc(50% + 32px);
-  right: max(0px, env(safe-area-inset-right));
-  z-index: 2;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  padding: 6px 0;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.rulebook-jump[hidden],
-.rulebook-dialog:not([data-view="index"]) .rulebook-jump {
-  display: none;
-}
-
-.rulebook-jump button {
-  appearance: none;
-  width: 22px;
-  padding: 1px 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--accent);
-  touch-action: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.rulebook-jump button.is-active {
-  color: var(--text-strong);
-}
-
 .rulebook-group-label + .rulebook-row {
   border-top: 0;
 }
