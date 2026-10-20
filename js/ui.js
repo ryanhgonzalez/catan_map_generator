@@ -519,6 +519,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const group = document.createElement("div");
       group.className = "rulebook-group";
       chapter.items.forEach((item) => {
+        // The Almanac's letters are left out: it's alphabetical already.
+        // C&K's card-deck names stay, as they group the cards.
+        if (item.label && item.label.length === 1) return;
         if (item.label) {
           const label = document.createElement("div");
           label.className = "rulebook-group-label";
