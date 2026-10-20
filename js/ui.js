@@ -313,46 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setUpDialogClosing(dialog);
 });
 
-// ----- Rules page -----
-// Opened from Rules in the header menu, laid out like Settings, with
-// a switch between the base game and Cities & Knights (remembered).
-// Searching shows only the entries that match in the game showing, in
-// their sections, with the matches highlighted.
-
-var RULES_GAME_KEY = "rulesGame";
-
-/**
- * Open or close a rules section, sliding its entries open or shut (from
- * wherever they are, if it's mid-slide). <details> alone just snaps.
- */
-function toggleRulesSection(section, opening) {
-  const body = section.querySelector(".rules-entries");
-  section.classList.toggle("is-expanded", opening);
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Mid-slide: start from the height it's at now
-  const from = section.open ? body.getBoundingClientRect().height : 0;
-  if (section.slide) section.slide.cancel();
-  section.open = true;
-  const to = opening ? body.scrollHeight : 0;
-  if (reduced) {
-    section.open = opening;
-    return;
-  }
-  body.style.overflow = "hidden";
-  const slide = body.animate([
-    { height: `${from}px`, opacity: opening ? 0.4 : 1 },
-    { height: `${to}px`, opacity: opening ? 1 : 0 }
-  ], {
-    duration: opening ? 320 : 260,
-    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)"
-  });
-  section.slide = slide;
-  slide.onfinish = () => {
-    section.slide = null;
-    body.style.overflow = "";
-    section.open = opening;
-  };
-}
+// ----- Sliding panels -----
 
 /**
  * Slide a hidden panel open, or shut and hidden again, by animating its
@@ -383,112 +344,16 @@ function slidePanel(panel, opening) {
   };
 }
 
-/** Set an element's text, wrapping each match of query in <mark>. */
-function highlightText(element, text, query) {
-  element.replaceChildren();
-  if (!query) {
-    element.textContent = text;
-    return;
-  }
-  const lower = text.toLowerCase();
-  let from = 0;
-  let at = lower.indexOf(query);
-  while (at !== -1) {
-    element.append(text.slice(from, at));
-    const mark = document.createElement("mark");
-    mark.textContent = text.slice(at, at + query.length);
-    element.append(mark);
-    from = at + query.length;
-    at = lower.indexOf(query, from);
-  }
-  element.append(text.slice(from));
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const dialog = document.getElementById("rules-dialog");
-  const search = document.getElementById("rules-search");
-  const empty = document.getElementById("rules-empty");
-  const sections = Array.from(dialog.querySelectorAll(".rules-section"));
-  // Each entry's heading and text, kept to search and re-highlight
-  const entries = Array.from(dialog.querySelectorAll(".rules-entry")).map((entry) => ({
-    entry: entry,
-    section: entry.closest(".rules-section"),
-    game: entry.closest(".rules-game"),
-    parts: Array.from(entry.querySelectorAll("h4, p")).map((el) => ({ el: el, text: el.textContent }))
-  }));
-  const games = Array.from(dialog.querySelectorAll(".rules-game"));
-  const gameChoices = Array.from(dialog.querySelectorAll('input[name="rules-game"]'));
-
-  // Base game or Cities & Knights; the search applies to whichever shows
-  const showGame = (game) => {
-    games.forEach((el) => { el.hidden = el.dataset.game !== game; });
-    gameChoices.forEach((input) => { input.checked = input.value === game; });
-    try {
-      localStorage.setItem(RULES_GAME_KEY, game);
-    } catch (err) {
-      // Not remembered; fine
-    }
-    search.dispatchEvent(new Event("input"));
-  };
-  gameChoices.forEach((input) => {
-    input.addEventListener("change", () => showGame(input.value));
-  });
-  let savedGame = null;
-  try {
-    savedGame = localStorage.getItem(RULES_GAME_KEY);
-  } catch (err) {
-    // Storage blocked: start on the base game
-  }
-
-  // Sections slide open and shut instead of snapping
-  sections.forEach((section) => {
-    section.querySelector("summary").addEventListener("click", (event) => {
-      event.preventDefault();
-      toggleRulesSection(section, !section.classList.contains("is-expanded"));
-    });
-  });
-
-  $("#rules-button").click(() => dialog.showModal());
-  $("#rules-close").click(() => closeDialog(dialog));
-  setUpDialogClosing(dialog);
-
-  search.addEventListener("input", () => {
-    const query = search.value.trim().toLowerCase();
-    dialog.classList.toggle("is-searching", query !== "");
-    let found = 0;
-    entries.forEach((item) => {
-      const match = !query ||
-        item.parts.some((part) => part.text.toLowerCase().includes(query));
-      item.entry.hidden = !match;
-      if (match && query && !item.game.hidden) found += 1;
-      item.parts.forEach((part) => highlightText(part.el, part.text, match ? query : ""));
-    });
-    // Sections with matches open; the rest hide. Cleared, all close again.
-    sections.forEach((section) => {
-      const hasMatch = entries.some((item) => item.section === section && !item.entry.hidden);
-      // Drop any slide in progress (cancel, unlike finish, skips its end)
-      if (section.slide) {
-        section.slide.cancel();
-        section.slide = null;
-        section.querySelector(".rules-entries").style.overflow = "";
-      }
-      section.hidden = query !== "" && !hasMatch;
-      section.open = query !== "" && hasMatch;
-      section.classList.toggle("is-expanded", section.open);
-    });
-    empty.hidden = !query || found > 0;
-    empty.textContent = `No rules match “${search.value.trim()}”.`;
-  });
-
-  if (savedGame === "ck") showGame("ck");
-});
-
-// ----- Rulebook page -----
-// The official rulebooks word for word, opened from "Full rulebook" on the
-// Rules page. Each book loads from rulebook/<book>.html the first time it
+// ----- Rules page -----
+// The official rulebooks word for word, opened from Rules in the header
+// menu, with a switch between the base game and Cities & Knights
+// (remembered). Each book loads from rulebook/<book>.html the first time it
 // shows. A ✷ cross-reference jumps to its entry, and a button at the
 // bottom goes back to where you were. Tapping an illustration shows it
 // full screen.
+
+// The book last shown (the key from when Rules had a short version)
+var RULES_GAME_KEY = "rulesGame";
 
 var RULEBOOK_TITLES = {
   base: "CATAN, word for word",
@@ -567,6 +432,11 @@ document.addEventListener("DOMContentLoaded", () => {
     books.forEach((el) => { el.hidden = el.dataset.book !== book; });
     bookChoices.forEach((input) => { input.checked = input.value === book; });
     subtitle.textContent = RULEBOOK_TITLES[book];
+    try {
+      localStorage.setItem(RULES_GAME_KEY, book);
+    } catch (err) {
+      // Not remembered; fine
+    }
     hideReturn();
     await loadBook(book);
     applySearch();
@@ -668,13 +538,17 @@ document.addEventListener("DOMContentLoaded", () => {
     applySearch();
   });
 
-  document.querySelectorAll(".rulebook-open").forEach((button) => {
-    button.addEventListener("click", () => {
-      search.value = "";
-      dialog.showModal();
-      dialog.scrollTop = 0;
-      showBook(button.dataset.book);
-    });
+  $("#rules-button").click(() => {
+    let saved = null;
+    try {
+      saved = localStorage.getItem(RULES_GAME_KEY);
+    } catch (err) {
+      // Storage blocked: start on the base game
+    }
+    search.value = "";
+    dialog.showModal();
+    dialog.scrollTop = 0;
+    showBook(saved === "ck" ? "ck" : "base");
   });
   $("#rulebook-close").click(() => closeDialog(dialog));
   setUpDialogClosing(dialog);
