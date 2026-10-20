@@ -369,12 +369,13 @@
   </dialog>
 
   <!-- Rules: the official rulebooks word for word, with their
-       illustrations, and search. A full page on phones and a side panel on
-       wider screens, like Settings. Each book loads from rulebook/ the
-       first time it's shown. -->
-  <dialog id="rulebook-dialog" class="settings-dialog rulebook-dialog" aria-labelledby="rulebook-title">
+       illustrations. It opens on an index (chapters and the Almanac A–Z,
+       or search results while searching); tapping an entry shows it alone,
+       with Previous and Next. A full page on phones and a side panel on
+       wider screens, like Settings. The books load from rulebook/. -->
+  <dialog id="rulebook-dialog" class="settings-dialog rulebook-dialog" data-view="index" aria-labelledby="rulebook-title">
     <div class="settings-header">
-      <button id="rulebook-close" class="btn btn-secondary btn-icon" type="button" aria-label="Close rules">
+      <button id="rulebook-close" class="btn btn-secondary btn-icon rulebook-index-only" type="button" aria-label="Close rules">
         <svg class="icon-back" viewBox="0 0 24 24" width="22" height="22" fill="none"
           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M15 18l-6-6 6-6" />
@@ -384,53 +385,127 @@
           <path d="M18 6L6 18M6 6l12 12" />
         </svg>
       </button>
-      <div class="rules-heading">
-        <h2 id="rulebook-title" class="settings-title">Rules</h2>
-        <span id="rulebook-subtitle" class="rules-subtitle">CATAN, word for word</span>
+      <h2 id="rulebook-title" class="rulebook-title rulebook-index-only">Rules</h2>
+
+      <!-- In an entry: back to wherever it was opened from -->
+      <button id="rulebook-back" class="rulebook-back rulebook-page-only" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        <span id="rulebook-back-label">Index</span>
+      </button>
+      <span id="rulebook-meta" class="rulebook-meta rulebook-page-only"></span>
+    </div>
+
+    <!-- The index: search, the game, shortcuts and every entry -->
+    <div id="rulebook-index" class="rulebook-view">
+      <label class="rules-search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.3-4.3" />
+        </svg>
+        <span class="sr-only">Search the rulebook</span>
+        <input id="rulebook-search" type="search" placeholder="Search robber, harbor, knight…" autocomplete="off" />
+      </label>
+
+      <div class="segmented rules-games" role="radiogroup" aria-label="Rulebook">
+        <label class="segment">
+          <input type="radio" name="rulebook-book" value="base" checked />
+          <span>Base game</span>
+        </label>
+        <label class="segment">
+          <input type="radio" name="rulebook-book" value="ck" />
+          <span>Cities &amp; Knights</span>
+        </label>
       </div>
+
+      <div id="rulebook-browse" class="rulebook-browse">
+        <div id="rulebook-tiles" class="rulebook-tiles"></div>
+        <div id="rulebook-lists" class="rulebook-lists"></div>
+      </div>
+      <div id="rulebook-results" class="rulebook-results" hidden>
+        <div class="rulebook-results-head">
+          <span id="rulebook-results-count"></span>
+          <button id="rulebook-results-other" class="rulebook-text-button" type="button" hidden></button>
+        </div>
+        <div id="rulebook-results-list" class="rulebook-group"></div>
+      </div>
+      <p id="rulebook-status" class="rules-empty" hidden></p>
     </div>
 
-    <label class="rules-search">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="M21 21l-4.3-4.3" />
-      </svg>
-      <span class="sr-only">Search the rulebook</span>
-      <input id="rulebook-search" type="search" placeholder="Search the rulebook" autocomplete="off" />
-    </label>
+    <!-- One entry, with the entries it mentions and Previous and Next -->
+    <article id="rulebook-entry" class="rulebook-view rulebook-entry-view" hidden>
+      <h3 id="rulebook-entry-title" class="rulebook-entry-title"></h3>
+      <div id="rulebook-entry-body" class="rulebook-entry-body"></div>
+      <div id="rulebook-mentions" class="rulebook-mentions" hidden>
+        <h4 class="settings-section-title">Mentioned here</h4>
+        <div id="rulebook-mentions-list" class="rulebook-mentions-list"></div>
+      </div>
+      <nav class="rulebook-pager" aria-label="Previous and next entry">
+        <button id="rulebook-prev" class="rulebook-pager-button" type="button">
+          <small>← Previous</small><span></span>
+        </button>
+        <button id="rulebook-next" class="rulebook-pager-button is-next" type="button">
+          <small>Next →</small><span></span>
+        </button>
+      </nav>
+    </article>
 
-    <div class="segmented rules-games" role="radiogroup" aria-label="Rulebook">
-      <label class="segment">
-        <input type="radio" name="rulebook-book" value="base" checked />
-        <span>Base game</span>
-      </label>
-      <label class="segment">
-        <input type="radio" name="rulebook-book" value="ck" />
-        <span>Cities &amp; Knights</span>
-      </label>
+    <!-- Building costs, gathered from "3. Build" in the base game's rules -->
+    <section id="rulebook-costs" class="rulebook-view" aria-labelledby="rulebook-costs-title" hidden>
+      <div class="rulebook-costs-head">
+        <h3 id="rulebook-costs-title" class="rulebook-entry-title">Building Costs</h3>
+        <span class="rules-subtitle">From “3. Build” in The Turn in Detail</span>
+      </div>
+      <div class="rulebook-group">
+        <button class="rulebook-cost" type="button" data-entry="base-roads">
+          <img src="images/rulebook/base-cost-road.webp" alt="Brick and lumber buy a road" width="118" height="87" />
+          <span><b>Road</b><small>Requires: Brick &amp; Lumber</small></span>
+        </button>
+        <button class="rulebook-cost" type="button" data-entry="base-settlements">
+          <img src="images/rulebook/base-cost-settlement.webp" alt="Brick, lumber, wool and grain buy a settlement" width="130" height="97" />
+          <span><b>Settlement <em>1 VP</em></b><small>Requires: Brick, Lumber, Wool, &amp; Grain</small></span>
+        </button>
+        <button class="rulebook-cost" type="button" data-entry="base-cities">
+          <img src="images/rulebook/base-cost-city.webp" alt="3 ore and 2 grain buy a city" width="135" height="106" />
+          <span><b>City <em>2 VPs</em></b><small>Requires: 3 Ore &amp; 2 Grain</small></span>
+        </button>
+        <button class="rulebook-cost" type="button" data-entry="base-development-cards">
+          <img src="images/rulebook/base-cost-devcard.webp" alt="Ore, wool and grain buy a development card" width="137" height="118" />
+          <span><b>Development Card</b><small>Requires: Ore, Wool, &amp; Grain</small></span>
+        </button>
+      </div>
+      <p class="rulebook-costs-note">You cannot build more pieces than what is available in your pool—a maximum of 5 settlements, 4 cities, and 15 roads.</p>
+    </section>
+
+    <!-- The books themselves, loaded here and read from, never shown -->
+    <div id="rulebook-data" hidden>
+      <div data-book="base"></div>
+      <div data-book="ck"></div>
     </div>
-
-    <div id="rulebook-books" class="rulebook-books">
-      <div class="rulebook-book" data-book="base"></div>
-      <div class="rulebook-book" data-book="ck" hidden></div>
-    </div>
-    <p id="rulebook-status" class="rules-empty" hidden></p>
-
-    <!-- After following a cross-reference, back to where you were -->
-    <button id="rulebook-return" class="rulebook-return" type="button" tabindex="-1"></button>
   </dialog>
 
-  <!-- An illustration from the rulebook, full screen -->
+  <!-- The illustrations of an entry, full screen, one at a time -->
   <dialog id="rulebook-viewer" class="rulebook-viewer" aria-label="Illustration">
-    <img id="rulebook-viewer-img" alt="" />
-    <p id="rulebook-viewer-caption"></p>
+    <span id="rulebook-viewer-meta" class="rulebook-viewer-meta"></span>
     <button id="rulebook-viewer-close" class="rulebook-viewer-close" type="button" aria-label="Close illustration">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"
         stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
     </button>
+    <img id="rulebook-viewer-img" alt="" />
+    <p id="rulebook-viewer-caption"></p>
+    <div id="rulebook-viewer-steps" class="rulebook-viewer-steps">
+      <button id="rulebook-viewer-prev" type="button" aria-label="Previous illustration">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <span id="rulebook-viewer-dots" class="rulebook-viewer-dots"></span>
+      <button id="rulebook-viewer-next" type="button" aria-label="Next illustration">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
+    </div>
   </dialog>
-
 
   <!-- Install prompt: a bottom sheet on phones, a card on wider screens -->
   <dialog id="install-dialog" class="install-dialog" aria-labelledby="install-title" aria-describedby="install-text">

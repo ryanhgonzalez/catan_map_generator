@@ -271,24 +271,12 @@ def build(book):
     if errors:
         sys.exit(f"{book}: unresolved cross-references: {sorted(set(errors))}")
 
-    # Every entry under a collapsible Contents
-    toc = ['<details class="rulebook-contents"><summary><span>Contents</span>'
-           '<svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" '
-           'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
-           'aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg></summary>']
-    for title, cid, items in contents:
-        toc.append(f'<a class="rulebook-contents-chapter" href="#{cid}">{inline(title)}</a>')
-        if items:
-            toc.append('<ul>')
-            toc.extend(f'<li><a href="#{eid}">{inline(t)}</a></li>' for t, eid in items)
-            toc.append('</ul>')
-    toc.append("</details>")
 
     path = os.path.join(repo, "rulebook", book + ".html")
     with open(path, "w") as f:
         f.write("<!-- Generated from the official rulebook PDFs: the text word for word,\n"
                 "     the illustrations cropped from the pages. -->\n")
-        f.write("\n".join(toc + out) + "\n")
+        f.write("\n".join(out) + "\n")
     print(f"{book}: {sum(len(i) for _, _, i in contents)} entries -> {path}")
 
 

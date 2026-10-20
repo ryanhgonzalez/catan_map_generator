@@ -346,275 +346,467 @@ function slidePanel(panel, opening) {
 
 // ----- Rules page -----
 // The official rulebooks word for word, opened from Rules in the header
-// menu, with a switch between the base game and Cities & Knights
-// (remembered). Each book loads from rulebook/<book>.html the first time it
-// shows, with its entries closed: tapping a title opens or closes it, and
-// searching opens the matches. A ✷ cross-reference opens and jumps to its
-// entry, and a button at the bottom goes back to where you were. Tapping
-// an illustration shows it full screen.
+// menu. Rules opens on an index of the game picked last (remembered):
+// shortcut tiles, then every entry as a row by chapter. Typing shows
+// matching entries instead. Tapping an entry shows it alone, with the
+// entries it mentions and Previous and Next; Back (or the device's back)
+// returns to where it was opened from. Tapping an illustration shows the
+// entry's illustrations full screen. Both books load from rulebook/ the
+// first time Rules opens.
 
 // The book last shown (the key from when Rules had a short version)
 var RULES_GAME_KEY = "rulesGame";
 
-var RULEBOOK_TITLES = {
-  base: "CATAN, word for word",
-  ck: "Cities & Knights, word for word"
+var RULEBOOK_NAMES = {
+  base: "Base game",
+  ck: "Cities & Knights"
 };
 
-/**
- * Wrap each match of query (lowercase) in the element's text in <mark>,
- * leaving its links and other markup as they are.
- */
-function highlightMatches(element, query) {
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  nodes.forEach((node) => {
-    const text = node.nodeValue;
-    const lower = text.toLowerCase();
-    let at = lower.indexOf(query);
-    if (at === -1) return;
-    const parts = document.createDocumentFragment();
-    let from = 0;
-    while (at !== -1) {
-      parts.append(text.slice(from, at));
-      const mark = document.createElement("mark");
-      mark.textContent = text.slice(at, at + query.length);
-      parts.append(mark);
-      from = at + query.length;
-      at = lower.indexOf(query, from);
-    }
-    parts.append(text.slice(from));
-    node.replaceWith(parts);
-  });
-}
+// The index's shortcuts: a chapter, or (base game) Building Costs
+var RULEBOOK_TILES = {
+  base: [
+    { title: "Game Overview", note: "New to Catan? Start here", chapter: "base-ch-game-overview" },
+    { title: "Game Rules", note: "Setup, a turn, building", chapter: "base-ch-game-rules" },
+    { title: "5–6 Players", note: "Bigger board, paired turns", chapter: "base-ch-5-6-player-extension" },
+    { title: "Building Costs", note: "Road, settlement, city…", costs: true }
+  ],
+  ck: [
+    { title: "Game Overview", note: "Setup and the turn sequence", chapter: "ck-ch-game-overview" },
+    { title: "Game Rules", note: "Knights, barbarians, cities", chapter: "ck-ch-game-rules" },
+    { title: "Progress Cards", note: "Every card, explained", chapter: "ck-ch-almanac" },
+    { title: "5–6 Players", note: "Paired turns", chapter: "ck-ch-5-6-player-extension" }
+  ]
+};
 
-var RULEBOOK_CHEVRON = '<svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>';
+var RULEBOOK_CHEVRON = '<svg class="rules-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>';
 
-/**
- * Make a loaded entry open and close from its title: everything under the
- * title goes into a body that starts closed.
- */
-function prepareRulebookEntry(entry) {
-  const head = entry.querySelector(".rulebook-entry-head");
-  const body = document.createElement("div");
-  body.className = "rulebook-entry-body";
-  body.id = `${entry.id}-body`;
-  while (head.nextSibling) body.append(head.nextSibling);
-  body.hidden = true;
-  entry.append(body);
-  head.setAttribute("role", "button");
-  head.setAttribute("tabindex", "0");
-  head.setAttribute("aria-expanded", "false");
-  head.setAttribute("aria-controls", body.id);
-  head.insertAdjacentHTML("beforeend", RULEBOOK_CHEVRON);
-}
-
-/** Open or close an entry, sliding (slide) or at once. */
-function setRulebookEntryOpen(entry, open, slide) {
-  const body = entry.querySelector(".rulebook-entry-body");
-  entry.classList.toggle("is-open", open);
-  entry.querySelector(".rulebook-entry-head").setAttribute("aria-expanded", String(open));
-  if (slide) {
-    slidePanel(body, open);
+/** Set an element's text, wrapping each match of query (lowercase) in <mark>. */
+function setHighlightedText(element, text, query) {
+  element.replaceChildren();
+  if (!query) {
+    element.textContent = text;
     return;
   }
-  if (body.slide) body.slide.cancel();
-  body.slide = null;
-  body.style.overflow = "";
-  body.hidden = !open;
+  const lower = text.toLowerCase();
+  let from = 0;
+  let at = lower.indexOf(query);
+  while (at !== -1) {
+    element.append(text.slice(from, at));
+    const mark = document.createElement("mark");
+    mark.textContent = text.slice(at, at + query.length);
+    element.append(mark);
+    from = at + query.length;
+    at = lower.indexOf(query, from);
+  }
+  element.append(text.slice(from));
+}
+
+/** A short piece of text around the first match of query, cut at words. */
+function snippetAround(text, query) {
+  const at = text.toLowerCase().indexOf(query);
+  if (at === -1) return text.length > 140 ? `${text.slice(0, 140).replace(/\s+\S*$/, "")}…` : text;
+  let start = Math.max(0, at - 50);
+  let end = Math.min(text.length, at + query.length + 90);
+  if (start > 0) start = text.indexOf(" ", start) + 1 || start;
+  if (end < text.length) end = text.lastIndexOf(" ", end) > at ? text.lastIndexOf(" ", end) : end;
+  return `${start > 0 ? "…" : ""}${text.slice(start, end)}${end < text.length ? "…" : ""}`;
+}
+
+/**
+ * Read a loaded book: its chapters (with the Almanac's letter labels) and
+ * its entries in order, each with its body markup and searchable text.
+ */
+function readRulebook(container, book) {
+  const chapters = [];
+  const entries = [];
+  container.querySelectorAll(".rulebook-chapter").forEach((section) => {
+    const chapter = {
+      id: section.id,
+      title: section.querySelector(".rulebook-chapter-title").textContent,
+      items: []
+    };
+    Array.from(section.children).forEach((child) => {
+      if (child.classList.contains("rulebook-letter")) {
+        chapter.items.push({ label: child.textContent });
+      } else if (child.classList.contains("rulebook-entry")) {
+        const body = child.cloneNode(true);
+        body.querySelector(".rulebook-entry-head").remove();
+        const page = child.querySelector(".rulebook-page");
+        const entry = {
+          id: child.id,
+          book: book,
+          title: child.dataset.title,
+          page: page ? page.textContent : "",
+          chapter: chapter.title,
+          html: body.innerHTML,
+          text: body.textContent.replace(/\s+/g, " ").trim(),
+          index: entries.length
+        };
+        entry.search = `${entry.title} ${entry.text}`.toLowerCase();
+        entries.push(entry);
+        chapter.items.push({ entry: entry });
+      }
+    });
+    chapters.push(chapter);
+  });
+  const byId = {};
+  entries.forEach((entry) => { byId[entry.id] = entry; });
+  return { chapters: chapters, entries: entries, byId: byId };
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const dialog = document.getElementById("rulebook-dialog");
-  const subtitle = document.getElementById("rulebook-subtitle");
   const search = document.getElementById("rulebook-search");
   const status = document.getElementById("rulebook-status");
-  const returnButton = document.getElementById("rulebook-return");
-  const books = Array.from(dialog.querySelectorAll(".rulebook-book"));
   const bookChoices = Array.from(dialog.querySelectorAll('input[name="rulebook-book"]'));
+  const indexView = document.getElementById("rulebook-index");
+  const browse = document.getElementById("rulebook-browse");
+  const tiles = document.getElementById("rulebook-tiles");
+  const lists = document.getElementById("rulebook-lists");
+  const results = document.getElementById("rulebook-results");
+  const resultsCount = document.getElementById("rulebook-results-count");
+  const resultsOther = document.getElementById("rulebook-results-other");
+  const resultsList = document.getElementById("rulebook-results-list");
+  const entryView = document.getElementById("rulebook-entry");
+  const entryTitle = document.getElementById("rulebook-entry-title");
+  const entryBody = document.getElementById("rulebook-entry-body");
+  const mentions = document.getElementById("rulebook-mentions");
+  const mentionsList = document.getElementById("rulebook-mentions-list");
+  const prevButton = document.getElementById("rulebook-prev");
+  const nextButton = document.getElementById("rulebook-next");
+  const costsView = document.getElementById("rulebook-costs");
+  const backButton = document.getElementById("rulebook-back");
+  const backLabel = document.getElementById("rulebook-back-label");
+  const meta = document.getElementById("rulebook-meta");
   const viewer = document.getElementById("rulebook-viewer");
   const viewerImg = document.getElementById("rulebook-viewer-img");
   const viewerCaption = document.getElementById("rulebook-viewer-caption");
-  // Each loaded book's entries, with their markup kept to re-highlight
-  const entriesByBook = {};
-  let current = "base";
-  // Where a cross-reference was followed from
-  let returnTo = null;
+  const viewerMeta = document.getElementById("rulebook-viewer-meta");
+  const viewerSteps = document.getElementById("rulebook-viewer-steps");
+  const viewerDots = document.getElementById("rulebook-viewer-dots");
+  const viewerPrev = document.getElementById("rulebook-viewer-prev");
+  const viewerNext = document.getElementById("rulebook-viewer-next");
 
-  const bookEl = (book) => books.find((el) => el.dataset.book === book);
+  const books = {};
+  let loading = null;
+  let book = "base";
+  // What shows: { view: "index" } | { view: "entry", id } | { view: "costs" }
+  let shown = { view: "index" };
+  // Where Back goes, newest last, each with its scroll and back-button entry
+  const trail = [];
 
-  async function loadBook(book) {
-    if (entriesByBook[book]) return;
-    const el = bookEl(book);
-    status.hidden = false;
-    status.textContent = "Loading the rulebook…";
-    try {
-      const response = await fetch(`rulebook/${book}.html`);
-      if (!response.ok) throw new Error(response.status);
-      el.innerHTML = await response.text();
-      // Each chapter's entries (and the Almanac's letters) share one box
-      el.querySelectorAll(".rulebook-chapter").forEach((chapter) => {
-        const title = chapter.querySelector(".rulebook-chapter-title");
-        const list = document.createElement("div");
-        list.className = "rulebook-list";
-        while (title.nextSibling) list.append(title.nextSibling);
-        chapter.append(list);
+  function loadBooks() {
+    if (!loading) {
+      status.hidden = false;
+      status.textContent = "Loading the rulebook…";
+      loading = Promise.all(["base", "ck"].map(async (key) => {
+        const response = await fetch(`rulebook/${key}.html`);
+        if (!response.ok) throw new Error(response.status);
+        const holder = dialog.querySelector(`#rulebook-data [data-book="${key}"]`);
+        holder.innerHTML = await response.text();
+        books[key] = readRulebook(holder, key);
+        holder.replaceChildren();
+      })).then(() => {
+        status.hidden = true;
+      }, (err) => {
+        // Try again next time Rules opens
+        loading = null;
+        status.textContent = "The rulebook couldn’t load. Check your connection and try again.";
+        throw err;
       });
-      entriesByBook[book] = Array.from(el.querySelectorAll(".rulebook-entry")).map((entry) => {
-        prepareRulebookEntry(entry);
-        return {
-          entry: entry,
-          html: entry.innerHTML,
-          text: entry.textContent.toLowerCase(),
-          // Opened by the reader; searching opens matches without changing it
-          open: false
-        };
+    }
+    return loading;
+  }
+
+  // ----- The index -----
+
+  function renderIndex() {
+    const data = books[book];
+    tiles.replaceChildren();
+    RULEBOOK_TILES[book].forEach((tile) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "rulebook-tile";
+      button.append(tile.title);
+      const note = document.createElement("small");
+      note.textContent = tile.note;
+      button.append(note);
+      button.addEventListener("click", () => {
+        if (tile.costs) {
+          go({ view: "costs" });
+        } else {
+          const section = document.getElementById(`${tile.chapter}-list`);
+          section.scrollIntoView({ behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
+        }
       });
-      status.hidden = true;
-    } catch (err) {
-      status.textContent = "The rulebook couldn’t load. Check your connection and try again.";
+      tiles.append(button);
+    });
+
+    lists.replaceChildren();
+    data.chapters.forEach((chapter) => {
+      const section = document.createElement("section");
+      section.className = "rulebook-section";
+      section.id = `${chapter.id}-list`;
+      const heading = document.createElement("h3");
+      heading.className = "settings-section-title";
+      heading.textContent = chapter.title;
+      const group = document.createElement("div");
+      group.className = "rulebook-group";
+      chapter.items.forEach((item) => {
+        if (item.label) {
+          const label = document.createElement("div");
+          label.className = "rulebook-group-label";
+          label.textContent = item.label;
+          group.append(label);
+        } else {
+          group.append(entryRow(item.entry));
+        }
+      });
+      section.append(heading, group);
+      lists.append(section);
+    });
+  }
+
+  function entryRow(entry) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "rulebook-row";
+    row.dataset.entry = entry.id;
+    const title = document.createElement("span");
+    title.className = "rulebook-row-title";
+    title.textContent = entry.title;
+    const page = document.createElement("span");
+    page.className = "rulebook-row-page";
+    page.textContent = entry.page;
+    row.append(title, page);
+    row.insertAdjacentHTML("beforeend", RULEBOOK_CHEVRON);
+    return row;
+  }
+
+  const matchesIn = (key, query) => books[key].entries.filter((entry) => entry.search.includes(query));
+
+  function renderSearch() {
+    const query = search.value.trim().toLowerCase();
+    browse.hidden = query !== "";
+    results.hidden = query === "";
+    status.hidden = true;
+    if (!query) return;
+    // Entries with the words in their title first, then the rest in book order
+    const found = matchesIn(book, query).sort((a, b) =>
+      (b.title.toLowerCase().includes(query) - a.title.toLowerCase().includes(query)) || a.index - b.index);
+    const other = book === "base" ? "ck" : "base";
+    const otherCount = matchesIn(other, query).length;
+    const inBook = (key) => (key === "base" ? "the base game" : "Cities & Knights");
+    resultsCount.textContent = found.length ? `In ${inBook(book)}` : "";
+    resultsOther.hidden = otherCount === 0;
+    resultsOther.textContent = `${otherCount} in ${inBook(other)}`;
+    resultsList.hidden = found.length === 0;
+    resultsList.replaceChildren();
+    found.forEach((entry) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "rulebook-row rulebook-result";
+      row.dataset.entry = entry.id;
+      const head = document.createElement("span");
+      head.className = "rulebook-result-head";
+      const title = document.createElement("span");
+      setHighlightedText(title, entry.title, query);
+      const where = document.createElement("span");
+      where.className = "rulebook-row-page";
+      where.textContent = `${entry.chapter} · ${entry.page}`;
+      head.append(title, where);
+      const snippet = document.createElement("span");
+      snippet.className = "rulebook-result-snippet";
+      setHighlightedText(snippet, snippetAround(entry.text, query), query);
+      row.append(head, snippet);
+      resultsList.append(row);
+    });
+    if (!found.length) {
+      status.hidden = false;
+      status.textContent = `Nothing in ${inBook(book)} matches “${search.value.trim()}”.`;
     }
   }
 
-  async function showBook(book) {
-    current = book;
-    books.forEach((el) => { el.hidden = el.dataset.book !== book; });
-    bookChoices.forEach((input) => { input.checked = input.value === book; });
-    subtitle.textContent = RULEBOOK_TITLES[book];
+  function showBook(key) {
+    book = key;
+    bookChoices.forEach((input) => { input.checked = input.value === key; });
     try {
-      localStorage.setItem(RULES_GAME_KEY, book);
+      localStorage.setItem(RULES_GAME_KEY, key);
     } catch (err) {
       // Not remembered; fine
     }
-    hideReturn();
-    await loadBook(book);
-    applySearch();
+    if (!books[key]) return;
+    renderIndex();
+    renderSearch();
   }
 
-  function applySearch() {
-    const entries = entriesByBook[current];
-    if (!entries) return;
-    const el = bookEl(current);
-    const query = search.value.trim().toLowerCase();
-    dialog.classList.toggle("is-searching", query !== "");
-    let found = 0;
-    entries.forEach((item) => {
-      const match = !query || item.text.includes(query);
-      item.entry.hidden = !match;
-      item.entry.innerHTML = item.html;
-      // Matches open; cleared, entries go back to how the reader left them
-      setRulebookEntryOpen(item.entry, query ? match : item.open, false);
-      if (match && query) {
-        found += 1;
-        highlightMatches(item.entry, query);
-      }
+  // ----- One entry, and Building Costs -----
+
+  function renderEntry(entry) {
+    entryTitle.textContent = entry.title;
+    entryBody.innerHTML = entry.html;
+    meta.textContent = `${RULEBOOK_NAMES[entry.book]} · ${entry.page}`;
+
+    // Each entry its links lead to, once, in the order they come
+    const seen = new Set([entry.id]);
+    mentionsList.replaceChildren();
+    entryBody.querySelectorAll('a[href^="#"]').forEach((link) => {
+      const target = books[entry.book].byId[link.getAttribute("href").slice(1)];
+      if (!target || seen.has(target.id)) return;
+      seen.add(target.id);
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "rulebook-chip";
+      chip.dataset.entry = target.id;
+      chip.textContent = target.title;
+      mentionsList.append(chip);
     });
-    // Chapter titles and letters show only with a matching entry under them
-    el.querySelectorAll(".rulebook-chapter").forEach((chapter) => {
-      chapter.hidden = !chapter.querySelector(".rulebook-entry:not([hidden])");
+    mentions.hidden = mentionsList.children.length === 0;
+
+    const list = books[entry.book].entries;
+    [[prevButton, list[entry.index - 1]], [nextButton, list[entry.index + 1]]].forEach(([button, other]) => {
+      button.hidden = !other;
+      button.dataset.entry = other ? other.id : "";
+      button.querySelector("span").textContent = other ? other.title : "";
     });
-    el.querySelectorAll(".rulebook-letter").forEach((letter) => {
-      let next = letter.nextElementSibling;
-      let any = false;
-      while (next && !next.classList.contains("rulebook-letter")) {
-        if (next.classList.contains("rulebook-entry") && !next.hidden) any = true;
-        next = next.nextElementSibling;
-      }
-      letter.hidden = !any;
+  }
+
+  function labelFor(state) {
+    if (state.view === "entry") return books[book].byId[state.id].title;
+    if (state.view === "costs") return "Building Costs";
+    return search.value.trim() ? "Results" : "Index";
+  }
+
+  function render() {
+    dialog.dataset.view = shown.view;
+    indexView.hidden = shown.view !== "index";
+    entryView.hidden = shown.view !== "entry";
+    costsView.hidden = shown.view !== "costs";
+    if (shown.view === "entry") renderEntry(books[book].byId[shown.id]);
+    if (shown.view === "costs") meta.textContent = `${RULEBOOK_NAMES.base} · pp. 4–5`;
+    if (trail.length) backLabel.textContent = labelFor(trail[trail.length - 1].state);
+  }
+
+  // Show something new, with Back (and the device's back) returning here
+  function go(state) {
+    const step = { state: shown, scroll: dialog.scrollTop };
+    step.back = () => {
+      const at = trail.indexOf(step);
+      if (at === -1) return;
+      trail.splice(at);
+      shown = step.state;
+      render();
+      dialog.scrollTop = step.scroll;
+      backClosed(step.back);
+    };
+    trail.push(step);
+    backOpened(step.back);
+    shown = state;
+    render();
+    dialog.scrollTop = 0;
+  }
+
+  // Previous and Next replace the entry showing, so Back skips past them
+  function replace(state) {
+    shown = state;
+    render();
+    dialog.scrollTop = 0;
+  }
+
+  // ----- Illustrations -----
+
+  let figures = [];
+  let figureAt = 0;
+
+  function showFigure(at) {
+    figureAt = Math.max(0, Math.min(figures.length - 1, at));
+    const img = figures[figureAt];
+    viewerImg.src = img.src;
+    viewerImg.alt = img.alt;
+    viewerCaption.textContent = img.alt;
+    viewerSteps.hidden = figures.length < 2;
+    viewerPrev.disabled = figureAt === 0;
+    viewerNext.disabled = figureAt === figures.length - 1;
+    viewerDots.replaceChildren();
+    figures.forEach((_, i) => {
+      const dot = document.createElement("span");
+      if (i === figureAt) dot.className = "is-current";
+      viewerDots.append(dot);
     });
-    status.hidden = !query || found > 0;
-    if (query && found === 0) status.textContent = `Nothing in the rulebook matches “${search.value.trim()}”.`;
   }
 
-  function hideReturn() {
-    returnTo = null;
-    returnButton.classList.remove("is-shown");
+  function openViewer(img) {
+    figures = Array.from(entryBody.querySelectorAll(".rulebook-zoom img"));
+    viewerMeta.textContent = meta.textContent ? `${entryTitle.textContent} · ${meta.textContent.split(" · ").pop()}` : "";
+    showFigure(figures.indexOf(img));
+    viewer.showModal();
   }
 
-  // Scroll an entry or chapter to the top, below the sticky header
-  function jumpTo(target) {
-    const header = dialog.querySelector(".settings-header");
-    const top = target.getBoundingClientRect().top - dialog.getBoundingClientRect().top +
-      dialog.scrollTop - header.offsetHeight - 12;
-    dialog.scrollTo({ top: top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
-    target.classList.remove("is-flashing");
-    void target.offsetWidth;
-    target.classList.add("is-flashing");
-  }
+  viewerPrev.addEventListener("click", () => showFigure(figureAt - 1));
+  viewerNext.addEventListener("click", () => showFigure(figureAt + 1));
+  $("#rulebook-viewer-close").click(() => closeDialog(viewer));
 
-  const itemFor = (entry) => (entriesByBook[current] || []).find((item) => item.entry === entry);
+  // Swipe between illustrations; a tap anywhere else closes
+  let swipeFrom = null;
+  let swiped = false;
+  viewer.addEventListener("pointerdown", (event) => {
+    swipeFrom = event.clientX;
+    swiped = false;
+  });
+  viewer.addEventListener("pointerup", (event) => {
+    if (swipeFrom === null) return;
+    const dx = event.clientX - swipeFrom;
+    swipeFrom = null;
+    if (Math.abs(dx) > 40 && figures.length > 1) {
+      swiped = true;
+      showFigure(figureAt + (dx < 0 ? 1 : -1));
+    }
+  });
+  viewer.addEventListener("click", (event) => {
+    if (swiped) {
+      swiped = false;
+      return;
+    }
+    if (!event.target.closest("button")) closeDialog(viewer);
+  });
+  viewer.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") showFigure(figureAt - 1);
+    if (event.key === "ArrowRight") showFigure(figureAt + 1);
+  });
+  viewer.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialog(viewer);
+  });
 
-  // Open or close an entry from its title, and remember it for after a search
-  function toggleEntry(entry) {
-    const item = itemFor(entry);
-    const open = !entry.classList.contains("is-open");
-    if (item) item.open = open;
-    setRulebookEntryOpen(entry, open, true);
-  }
+  // ----- Taps -----
 
   dialog.addEventListener("click", (event) => {
     const zoom = event.target.closest(".rulebook-zoom");
     if (zoom) {
-      const img = zoom.querySelector("img");
-      viewerImg.src = img.src;
-      viewerImg.alt = img.alt;
-      viewerCaption.textContent = img.alt;
-      viewer.showModal();
+      openViewer(zoom.querySelector("img"));
       return;
     }
-    const head = event.target.closest(".rulebook-entry-head");
-    if (head) {
-      toggleEntry(head.closest(".rulebook-entry"));
+    const link = event.target.closest('#rulebook-entry-body a[href^="#"]');
+    if (link) {
+      event.preventDefault();
+      const id = link.getAttribute("href").slice(1);
+      if (books[book].byId[id]) go({ view: "entry", id: id });
       return;
     }
-    const link = event.target.closest('.rulebook-book a[href^="#"]');
-    if (!link) return;
-    event.preventDefault();
-    // Back comes to the link's entry where it sits on screen now, wherever
-    // entries opening above it have moved it to; it stays open
-    const from = link.closest(".rulebook-entry");
-    returnTo = from
-      ? { entry: from, offset: from.getBoundingClientRect().top }
-      : { top: dialog.scrollTop };
-    if (from && itemFor(from)) itemFor(from).open = true;
-    // A link found while searching leads into the whole book again
-    if (search.value) {
-      search.value = "";
-      applySearch();
+    const opener = event.target.closest("[data-entry]");
+    if (!opener || !opener.dataset.entry) return;
+    if (opener === prevButton || opener === nextButton) {
+      replace({ view: "entry", id: opener.dataset.entry });
+    } else {
+      go({ view: "entry", id: opener.dataset.entry });
     }
-    const target = document.getElementById(link.getAttribute("href").slice(1));
-    if (!target) return;
-    // Opened at once, so the scroll can reach it even near the end
-    const targetEntry = target.closest(".rulebook-entry");
-    if (targetEntry && !targetEntry.classList.contains("is-open")) {
-      if (itemFor(targetEntry)) itemFor(targetEntry).open = true;
-      setRulebookEntryOpen(targetEntry, true, false);
-    }
-    returnButton.textContent = from ? `← Back to ${from.dataset.title}` : "← Back to contents";
-    returnButton.classList.add("is-shown");
-    returnButton.tabIndex = 0;
-    jumpTo(target);
   });
 
-  // Titles open and close from the keyboard too
-  dialog.addEventListener("keydown", (event) => {
-    const head = event.target.closest && event.target.closest(".rulebook-entry-head");
-    if (!head || (event.key !== "Enter" && event.key !== " ")) return;
-    event.preventDefault();
-    toggleEntry(head.closest(".rulebook-entry"));
+  backButton.addEventListener("click", () => {
+    if (trail.length) trail[trail.length - 1].back();
   });
 
-  returnButton.addEventListener("click", () => {
-    if (returnTo) {
-      const top = returnTo.entry
-        ? dialog.scrollTop + returnTo.entry.getBoundingClientRect().top - returnTo.offset
-        : returnTo.top;
-      dialog.scrollTo({ top: top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
-    }
-    hideReturn();
-    returnButton.tabIndex = -1;
-  });
+  resultsOther.addEventListener("click", () => showBook(book === "base" ? "ck" : "base"));
 
   bookChoices.forEach((input) => {
     input.addEventListener("change", () => {
@@ -623,8 +815,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
   search.addEventListener("input", () => {
-    hideReturn();
-    applySearch();
+    if (books[book]) renderSearch();
   });
 
   $("#rules-button").click(() => {
@@ -634,19 +825,24 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       // Storage blocked: start on the base game
     }
+    book = saved === "ck" ? "ck" : "base";
+    bookChoices.forEach((input) => { input.checked = input.value === book; });
     search.value = "";
+    shown = { view: "index" };
+    render();
+    browse.hidden = false;
+    results.hidden = true;
     dialog.showModal();
     dialog.scrollTop = 0;
-    showBook(saved === "ck" ? "ck" : "base");
+    loadBooks().then(() => showBook(book), () => {});
   });
   $("#rulebook-close").click(() => closeDialog(dialog));
   setUpDialogClosing(dialog);
 
-  // The illustration viewer closes with a tap anywhere, Esc or back
-  viewer.addEventListener("click", () => closeDialog(viewer));
-  viewer.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    closeDialog(viewer);
+  // Closing Rules drops the way back through it, and its back entries
+  dialog.addEventListener("close", () => {
+    trail.splice(0).reverse().forEach((step) => backClosed(step.back));
+    shown = { view: "index" };
   });
 });
 
