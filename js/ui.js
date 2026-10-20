@@ -186,6 +186,12 @@ function setUpDialogClosing(dialog) {
 // leaving the app. Each one adds a history entry when it opens; going back
 // closes the newest, and closing one another way takes an entry off again.
 // The entries are all alike, so only how many there are matters.
+//
+// The iPhone Home Screen app gets none: it has no back button, and iOS
+// lets an edge swipe go back and forward through the entries, sliding the
+// whole app aside over a white background. There, Back and the close
+// buttons do the job. (navigator.standalone is set only in that app.)
+const backUsesHistory = navigator.standalone !== true;
 
 // How to close each thing that's open, newest last
 const backStack = [];
@@ -197,6 +203,7 @@ let backSkips = 0;
 let backPushesWaiting = 0;
 
 function backOpened(close) {
+  if (!backUsesHistory) return;
   backStack.push(close);
   if (backSkips > 0) {
     backPushesWaiting += 1;
