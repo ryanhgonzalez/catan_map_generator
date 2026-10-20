@@ -1435,13 +1435,12 @@ body {
   display: none;
 }
 
+/* Like the Settings title */
 .rulebook-title {
   margin: 0;
-  font-family: "Cinzel", Georgia, serif;
-  font-weight: 800;
-  font-size: 1.75rem;
-  line-height: 1;
-  color: var(--title-gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-strong);
 }
 
 .rulebook-back {
@@ -1554,11 +1553,13 @@ body {
 
 /* The Almanac's letters (and C&K's card decks), small labels between rows */
 .rulebook-group-label {
-  padding: 0.55rem 0.9rem 0.15rem;
-  font-family: "Cinzel", Georgia, serif;
-  font-weight: 800;
-  font-size: 0.82rem;
-  color: var(--rulebook-star);
+  padding: 0.6rem 0.9rem 0.2rem;
+  /* Like the chapter labels (settings-section-title) */
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
 
 .rulebook-group-label + .rulebook-row {
@@ -1620,13 +1621,13 @@ body {
   gap: 1rem;
 }
 
+/* In the Settings title's type, a size up to head the page */
 .rulebook-entry-title {
   margin: 0;
-  font-family: "Cinzel", Georgia, serif;
-  font-weight: 800;
-  font-size: 1.85rem;
-  line-height: 1.15;
-  color: var(--title-gold);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-strong);
 }
 
 /* Floated illustrations stay inside the body */
