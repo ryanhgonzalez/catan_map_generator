@@ -453,6 +453,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch(`rulebook/${book}.html`);
       if (!response.ok) throw new Error(response.status);
       el.innerHTML = await response.text();
+      // Each chapter's entries (and the Almanac's letters) share one box
+      el.querySelectorAll(".rulebook-chapter").forEach((chapter) => {
+        const title = chapter.querySelector(".rulebook-chapter-title");
+        const list = document.createElement("div");
+        list.className = "rulebook-list";
+        while (title.nextSibling) list.append(title.nextSibling);
+        chapter.append(list);
+      });
       entriesByBook[book] = Array.from(el.querySelectorAll(".rulebook-entry")).map((entry) => {
         prepareRulebookEntry(entry);
         return {
