@@ -126,7 +126,7 @@ There are 6 knights per player (color):
 - 2 strong knights (2 rings, full helmet)
 - 2 mighty knights (3 rings, great-helm with crest)
 
-You need to attach 2 labels to each knight token. Label each tokes as shown in illustration C. The front side of each token gets the “inactive” symbol (a black & white image), the reverse side of each token gets the “active” symbol (a full-color head).
+You need to attach 2 labels to each knight token. Label each token as shown in illustration C. The front side of each token gets the “inactive” symbol (a black & white image), the reverse side of each token gets the “active” symbol (a full-color head).
 
 ---
 note: **Important:** Make sure to affix the correct stickers to each token. The “inactive” front and “active” back of each token must be a knight of matching level. For example, inactive basic on the front, active basic on the back, etc.
@@ -334,7 +334,7 @@ In addition, when you build the third improvement in each area, you receive a sp
 ---
 - **Trading House (yellow):** You may trade commodities (of the same type) 2:1 for any commodity or resource. You may make this trade only during your turn, as if you were using a harbor. This special trade advantage does not include resources, only the three commodities.
 - Fortress (blue): You may promote strong knights to mighty knights after you have built the fortress. You must still pay to promote the knights normally.
-- Aqueduct (green): If, when the dice are rolled for production, you do not receive any resources or commodities, you may take any one resource of your choice from the bank. You many not, however, use this ability when a “7” is rolled.
+- Aqueduct (green): If, when the dice are rolled for production, you do not receive any resources or commodities, you may take any one resource of your choice from the bank. You may not, however, use this ability when a “7” is rolled.
 
 img: ck-illus-l | Illustration L: 3 City Improvements, the third level of trade, politics and science | full
 
@@ -430,7 +430,7 @@ If there is no empty intersection for the displaced knight to move to, it is rem
 
 You may not displace your own knights.
 
-After you displace an opponent’s knight, move your (displacing) knight to the displaced knight’s former intersection. Your knight is then turned over to it’s inactive side.
+After you displace an opponent’s knight, move your (displacing) knight to the displaced knight’s former intersection. Your knight is then turned over to its inactive side.
 
 img: ck-illus-p | Illustration P: Red’s strong knight displaces Blue’s basic knight, which may move to A or B but not C | side
 
@@ -531,7 +531,7 @@ You may use the *Catan: Seafarers Expansion* along with the *Cities & Knights Ex
 
 This rule adds a new level of strategy and politics to the battle between the barbarians and the knights. Be warned: Using this rule can make the game very nasty (and longer as well).
 
-When the barbarians land, all of the knights are no longer assumed to aid in the defense of Catan. Beginning with the player who rolled the dice this turn, one after another each player will declare how many of their own active knights will be defending Catan. Each player may choose to commit some, none, or all of their active knights to the defense. This may cause Catan to lose the battle (due to a shortage of knight strength), which would resulting in some players losing a city. Only knights that are committed to the defense count toward the strength of the knight army, and only committed knights are taken into account when determining who contributed the weakest force (and will have a city pillaged).
+When the barbarians land, all of the knights are no longer assumed to aid in the defense of Catan. Beginning with the player who rolled the dice this turn, one after another each player will declare how many of their own active knights will be defending Catan. Each player may choose to commit some, none, or all of their active knights to the defense. This may cause Catan to lose the battle (due to a shortage of knight strength), which would result in some players losing a city. Only knights that are committed to the defense count toward the strength of the knight army, and only committed knights are taken into account when determining who contributed the weakest force (and will have a city pillaged).
 
 ### Knight-Errant Variant
 
@@ -700,7 +700,7 @@ img: ck-card-intrigue | Intrigue card: You may displace one of your opponent’s
 
 You may displace an opponent’s knight. The knight must be on an intersection connected to at least one of your roads or shipping routes.
 
-note: With this card you can displace an opponent’s knight without using a knight of your own. You can play this card even if you have no knights of your own. The displaced knight must be moved to an empty space. If the knight cannot be displaced, then remove it from the board (return it to its owner). After the knight is displaced), you may place a basic knight instead, following the normal rules.
+note: With this card you can displace an opponent’s knight without using a knight of your own. You can play this card even if you have no knights of your own. The displaced knight must be moved to an empty space. If the knight cannot be displaced, then remove it from the board (return it to its owner). After the knight is displaced, you may place a basic knight instead, following the normal rules.
 
 ---
 ## Saboteur (2) | 17
@@ -747,7 +747,7 @@ img: ck-card-commercial-harbor | Commercial Harbor card: You may offer each oppo
 
 You may force each of the other players to make a special trade. You may offer each opponent any 1 resource card from your hand. They must exchange it for any 1 commodity card of their choice from their hand, if they have any.
 
-note: You may use this ability at any time during the turn you play the card. However, you may only force each player to make this trade with you once that turn. Opponent choose which commodity card to give you if they have more than 1. If you offer a resource to a player who has no commodity cards, take your resource card back and the trade is void.
+note: You may use this ability at any time during the turn you play the card. However, you may only force each player to make this trade with you once that turn. Opponents choose which commodity card to give you if they have more than 1. If you offer a resource to a player who has no commodity cards, take your resource card back and the trade is void.
 
 ---
 ## Master Merchant (2) | 17
@@ -783,7 +783,7 @@ img: ck-card-resource-monopoly | Resource Monopoly card: Name a resource (brick,
 
 Name a resource. Each player must give you 2 of that type of resource if they have them.
 
-note: You may name any of the 5 resources (ore, grain, wool, lumber, or brick). Each player that has the named resource must give you 2. Any player that has only has 1 of that resource, must give you that 1 card.
+note: You may name any of the 5 resources (ore, grain, wool, lumber, or brick). Each player that has the named resource must give you 2. Any player that only has 1 of that resource, must give you that 1 card.
 
 ---
 ## Trade Monopoly (2) | 18
