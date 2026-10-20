@@ -1416,10 +1416,9 @@ body {
 }
 
 /* --- Rulebook --- */
-/* The rulebooks word for word (rulebook/*.html): chapter shortcuts,
-   collapsible contents, then each chapter as a box of entries that open
-   from their titles. Illustrations sit on a plate the color of the
-   printed page. */
+/* The rulebooks word for word (rulebook/*.html): collapsible contents,
+   then each chapter as a box of entries that open from their titles.
+   Illustrations sit on a plate the color of the printed page. */
 
 .rulebook-dialog {
   width: 520px;
@@ -1439,26 +1438,8 @@ body {
   display: none;
 }
 
-.rulebook-dialog.is-searching .rulebook-chapters,
 .rulebook-dialog.is-searching .rulebook-contents {
   display: none;
-}
-
-.rulebook-chapters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.rulebook-chapters a {
-  padding: 0.45rem 0.8rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  background: var(--bg-elevated);
-  color: var(--text-strong);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
 }
 
 .rulebook-contents {

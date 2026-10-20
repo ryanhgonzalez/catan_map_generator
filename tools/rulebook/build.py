@@ -271,14 +271,11 @@ def build(book):
     if errors:
         sys.exit(f"{book}: unresolved cross-references: {sorted(set(errors))}")
 
-    # Chapter shortcuts, then every entry under a collapsible Contents
-    toc = ['<nav class="rulebook-chapters" aria-label="Chapters">']
-    toc.extend(f'<a href="#{cid}">{inline(title)}</a>' for title, cid, _ in contents)
-    toc.append("</nav>")
-    toc.append('<details class="rulebook-contents"><summary><span>Contents</span>'
-               '<svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" '
-               'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
-               'aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg></summary>')
+    # Every entry under a collapsible Contents
+    toc = ['<details class="rulebook-contents"><summary><span>Contents</span>'
+           '<svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" '
+           'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
+           'aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg></summary>']
     for title, cid, items in contents:
         toc.append(f'<a class="rulebook-contents-chapter" href="#{cid}">{inline(title)}</a>')
         if items:
