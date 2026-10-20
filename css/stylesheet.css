@@ -1410,8 +1410,8 @@ body {
 
 /* --- Rulebook --- */
 /* The rulebooks word for word (rulebook/*.html), shown in views (ui.js):
-   the index (shortcut tiles and every entry as rows, or search results),
-   one entry at a time with Previous and Next, and Building Costs.
+   the index (every entry as rows, or search results) and one entry at a
+   time.
    Illustrations sit on a plate the color of the printed page. */
 
 .rulebook-dialog {
@@ -1428,12 +1428,6 @@ body {
 .rulebook-dialog #rulebook-close {
   order: 2;
   margin-left: auto;
-}
-
-/* On an entry, Previous and Next sit flush with the bottom: the bar keeps
-   the space for the home indicator itself */
-.rulebook-dialog.rulebook-dialog[data-view="entry"] {
-  padding-bottom: 0;
 }
 
 .rulebook-dialog[data-view="index"] .rulebook-page-only,
@@ -1504,38 +1498,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
-}
-
-/* Shortcuts to a chapter, or to Building Costs */
-.rulebook-tiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.rulebook-tile {
-  appearance: none;
-  min-height: 72px;
-  padding: 0.8rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.2rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  background: var(--bg-elevated);
-  color: var(--text-strong);
-  font: inherit;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.rulebook-tile small {
-  font-size: 0.78rem;
-  font-weight: 400;
-  color: var(--text-muted);
 }
 
 /* A chapter: its name, then its entries as rows in one box */
@@ -1653,10 +1615,8 @@ body {
   color: inherit;
 }
 
-/* One entry, filling the page so Previous and Next sit at the bottom
-   even under a short one */
+/* One entry */
 .rulebook-entry-view {
-  flex: 1 0 auto;
   gap: 1rem;
 }
 
@@ -1850,128 +1810,6 @@ body {
   font-size: 0.9rem;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* Previous and Next, pinned to the bottom */
-.rulebook-pager {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  margin-top: auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
-  margin: auto -1.25rem 0;
-  padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--divider);
-  background: var(--bg-elevated);
-}
-
-.rulebook-pager-button {
-  appearance: none;
-  min-height: 56px;
-  min-width: 0;
-  padding: 0.5rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.1rem;
-  border: 0;
-  border-radius: 12px;
-  background: var(--segment-track);
-  color: var(--text-strong);
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.rulebook-pager-button.is-next {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.rulebook-pager-button[hidden] {
-  visibility: hidden;
-  display: flex;
-}
-
-.rulebook-pager-button small {
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.rulebook-pager-button span {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Building costs: the book's cost pictures, each opening its entry */
-.rulebook-costs-head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.rulebook-cost {
-  appearance: none;
-  width: 100%;
-  padding: 0.75rem 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.rulebook-cost img {
-  flex-shrink: 0;
-  width: 112px;
-  height: auto;
-  padding: 4px;
-  border-radius: 10px;
-  background: var(--rulebook-plate);
-}
-
-.rulebook-cost span {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.rulebook-cost b {
-  font-size: 1rem;
-  color: var(--text-strong);
-}
-
-.rulebook-cost em {
-  margin-left: 0.25rem;
-  font-size: 0.8rem;
-  font-style: normal;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.rulebook-cost small {
-  font-size: 0.86rem;
-  color: var(--text-muted);
-}
-
-.rulebook-costs-note {
-  margin: 0 0.25rem;
-  font-size: 0.88rem;
-  line-height: 1.5;
-  color: var(--text-muted);
 }
 
 /* An entry's illustrations full screen, on black */
@@ -2278,12 +2116,6 @@ body {
   .rulebook-dialog #rulebook-close {
     order: 0;
     margin-left: 0;
-  }
-
-  .rulebook-pager {
-    margin: auto -1rem 0;
-    padding-left: 1rem;
-    padding-right: 1rem;
   }
 
   .settings-dialog .icon-close {

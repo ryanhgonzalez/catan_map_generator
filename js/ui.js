@@ -347,10 +347,9 @@ function slidePanel(panel, opening) {
 // ----- Rules page -----
 // The official rulebooks word for word, opened from Rules in the header
 // menu. Rules opens on an index of the game picked last (remembered):
-// shortcut tiles, then every entry as a row by chapter. Typing shows
-// matching entries instead. Tapping an entry shows it alone, with the
-// entries it mentions and Previous and Next; Back (or the device's back)
-// returns to where it was opened from. Tapping an illustration shows the
+// every entry as a row by chapter. Typing shows matching entries instead.
+// Tapping an entry shows it alone, with the entries it mentions; Back (or
+// the device's back) returns to where it was opened from. Tapping an illustration shows the
 // entry's illustrations full screen. Both books load from rulebook/ the
 // first time Rules opens.
 
@@ -360,22 +359,6 @@ var RULES_GAME_KEY = "rulesGame";
 var RULEBOOK_NAMES = {
   base: "Base game",
   ck: "Cities & Knights"
-};
-
-// The index's shortcuts: a chapter, or (base game) Building Costs
-var RULEBOOK_TILES = {
-  base: [
-    { title: "Game Overview", note: "New to Catan? Start here", chapter: "base-ch-game-overview" },
-    { title: "Game Rules", note: "Setup, a turn, building", chapter: "base-ch-game-rules" },
-    { title: "5–6 Players", note: "Bigger board, paired turns", chapter: "base-ch-5-6-player-extension" },
-    { title: "Building Costs", note: "Road, settlement, city…", costs: true }
-  ],
-  ck: [
-    { title: "Game Overview", note: "Setup and the turn sequence", chapter: "ck-ch-game-overview" },
-    { title: "Game Rules", note: "Knights, barbarians, cities", chapter: "ck-ch-game-rules" },
-    { title: "Progress Cards", note: "Every card, explained", chapter: "ck-ch-almanac" },
-    { title: "5–6 Players", note: "Paired turns", chapter: "ck-ch-5-6-player-extension" }
-  ]
 };
 
 var RULEBOOK_CHEVRON = '<svg class="rules-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>';
@@ -461,7 +444,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const bookChoices = Array.from(dialog.querySelectorAll('input[name="rulebook-book"]'));
   const indexView = document.getElementById("rulebook-index");
   const browse = document.getElementById("rulebook-browse");
-  const tiles = document.getElementById("rulebook-tiles");
   const lists = document.getElementById("rulebook-lists");
   const results = document.getElementById("rulebook-results");
   const resultsCount = document.getElementById("rulebook-results-count");
@@ -472,9 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const entryBody = document.getElementById("rulebook-entry-body");
   const mentions = document.getElementById("rulebook-mentions");
   const mentionsList = document.getElementById("rulebook-mentions-list");
-  const prevButton = document.getElementById("rulebook-prev");
-  const nextButton = document.getElementById("rulebook-next");
-  const costsView = document.getElementById("rulebook-costs");
   const backButton = document.getElementById("rulebook-back");
   const backLabel = document.getElementById("rulebook-back-label");
   const meta = document.getElementById("rulebook-meta");
@@ -490,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const books = {};
   let loading = null;
   let book = "base";
-  // What shows: { view: "index" } | { view: "entry", id } | { view: "costs" }
+  // What shows: { view: "index" } | { view: "entry", id }
   let shown = { view: "index" };
   // Where Back goes, newest last, each with its scroll and back-button entry
   const trail = [];
@@ -522,26 +501,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderIndex() {
     const data = books[book];
-    tiles.replaceChildren();
-    RULEBOOK_TILES[book].forEach((tile) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "rulebook-tile";
-      button.append(tile.title);
-      const note = document.createElement("small");
-      note.textContent = tile.note;
-      button.append(note);
-      button.addEventListener("click", () => {
-        if (tile.costs) {
-          go({ view: "costs" });
-        } else {
-          const section = document.getElementById(`${tile.chapter}-list`);
-          section.scrollIntoView({ behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
-        }
-      });
-      tiles.append(button);
-    });
-
     lists.replaceChildren();
     data.chapters.forEach((chapter) => {
       const section = document.createElement("section");
@@ -640,7 +599,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSearch();
   }
 
-  // ----- One entry, and Building Costs -----
+  // ----- One entry -----
 
   function renderEntry(entry) {
     entryTitle.textContent = entry.title;
@@ -663,17 +622,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     mentions.hidden = mentionsList.children.length === 0;
 
-    const list = books[entry.book].entries;
-    [[prevButton, list[entry.index - 1]], [nextButton, list[entry.index + 1]]].forEach(([button, other]) => {
-      button.hidden = !other;
-      button.dataset.entry = other ? other.id : "";
-      button.querySelector("span").textContent = other ? other.title : "";
-    });
   }
 
   function labelFor(state) {
     if (state.view === "entry") return books[book].byId[state.id].title;
-    if (state.view === "costs") return "Building Costs";
     return search.value.trim() ? "Results" : "Index";
   }
 
@@ -681,9 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dialog.dataset.view = shown.view;
     indexView.hidden = shown.view !== "index";
     entryView.hidden = shown.view !== "entry";
-    costsView.hidden = shown.view !== "costs";
     if (shown.view === "entry") renderEntry(books[book].byId[shown.id]);
-    if (shown.view === "costs") meta.textContent = `${RULEBOOK_NAMES.base} · pp. 4–5`;
     if (trail.length) backLabel.textContent = labelFor(trail[trail.length - 1].state);
   }
 
@@ -691,7 +641,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // or the left coming back (-1), with the header's back button and page
   function slideIn(from) {
     if (prefersReducedMotion.matches) return;
-    const view = [indexView, entryView, costsView].find((el) => !el.hidden);
+    const view = indexView.hidden ? entryView : indexView;
     const timing = { duration: 300, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" };
     view.animate([
       { transform: `translateX(${from * 56}px)`, opacity: 0 },
@@ -721,15 +671,6 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
     dialog.scrollTop = 0;
     slideIn(1);
-  }
-
-  // Previous and Next replace the entry showing, so Back skips past them;
-  // it slides in from the side it comes from
-  function replace(state, from) {
-    shown = state;
-    render();
-    dialog.scrollTop = 0;
-    slideIn(from);
   }
 
   // ----- Illustrations -----
@@ -814,11 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const opener = event.target.closest("[data-entry]");
     if (!opener || !opener.dataset.entry) return;
-    if (opener === prevButton || opener === nextButton) {
-      replace({ view: "entry", id: opener.dataset.entry }, opener === nextButton ? 1 : -1);
-    } else {
-      go({ view: "entry", id: opener.dataset.entry });
-    }
+    go({ view: "entry", id: opener.dataset.entry });
   });
 
   backButton.addEventListener("click", () => {

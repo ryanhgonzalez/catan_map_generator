@@ -370,8 +370,7 @@
 
   <!-- Rules: the official rulebooks word for word, with their
        illustrations. It opens on an index (chapters and the Almanac A–Z,
-       or search results while searching); tapping an entry shows it alone,
-       with Previous and Next. A full page on phones and a side panel on
+       or search results while searching); tapping an entry shows it alone. A full page on phones and a side panel on
        wider screens, like Settings. The books load from rulebook/. -->
   <dialog id="rulebook-dialog" class="settings-dialog rulebook-dialog" data-view="index" aria-labelledby="rulebook-title">
     <div class="settings-header">
@@ -396,7 +395,7 @@
       <span id="rulebook-meta" class="rulebook-meta rulebook-page-only"></span>
     </div>
 
-    <!-- The index: search, the game, shortcuts and every entry -->
+    <!-- The index: search, the game and every entry -->
     <div id="rulebook-index" class="rulebook-view">
       <label class="rules-search">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
@@ -420,7 +419,6 @@
       </div>
 
       <div id="rulebook-browse" class="rulebook-browse">
-        <div id="rulebook-tiles" class="rulebook-tiles"></div>
         <div id="rulebook-lists" class="rulebook-lists"></div>
       </div>
       <div id="rulebook-results" class="rulebook-results" hidden>
@@ -433,7 +431,7 @@
       <p id="rulebook-status" class="rules-empty" hidden></p>
     </div>
 
-    <!-- One entry, with the entries it mentions and Previous and Next -->
+    <!-- One entry, with the entries it mentions -->
     <article id="rulebook-entry" class="rulebook-view rulebook-entry-view" hidden>
       <h3 id="rulebook-entry-title" class="rulebook-entry-title"></h3>
       <div id="rulebook-entry-body" class="rulebook-entry-body"></div>
@@ -441,42 +439,7 @@
         <h4 class="settings-section-title">Mentioned here</h4>
         <div id="rulebook-mentions-list" class="rulebook-mentions-list"></div>
       </div>
-      <nav class="rulebook-pager" aria-label="Previous and next entry">
-        <button id="rulebook-prev" class="rulebook-pager-button" type="button">
-          <small>← Previous</small><span></span>
-        </button>
-        <button id="rulebook-next" class="rulebook-pager-button is-next" type="button">
-          <small>Next →</small><span></span>
-        </button>
-      </nav>
     </article>
-
-    <!-- Building costs, gathered from "3. Build" in the base game's rules -->
-    <section id="rulebook-costs" class="rulebook-view" aria-labelledby="rulebook-costs-title" hidden>
-      <div class="rulebook-costs-head">
-        <h3 id="rulebook-costs-title" class="rulebook-entry-title">Building Costs</h3>
-        <span class="rules-subtitle">From “3. Build” in The Turn in Detail</span>
-      </div>
-      <div class="rulebook-group">
-        <button class="rulebook-cost" type="button" data-entry="base-roads">
-          <img src="images/rulebook/base-cost-road.webp" alt="Brick and lumber buy a road" width="118" height="87" />
-          <span><b>Road</b><small>Requires: Brick &amp; Lumber</small></span>
-        </button>
-        <button class="rulebook-cost" type="button" data-entry="base-settlements">
-          <img src="images/rulebook/base-cost-settlement.webp" alt="Brick, lumber, wool and grain buy a settlement" width="130" height="97" />
-          <span><b>Settlement <em>1 VP</em></b><small>Requires: Brick, Lumber, Wool, &amp; Grain</small></span>
-        </button>
-        <button class="rulebook-cost" type="button" data-entry="base-cities">
-          <img src="images/rulebook/base-cost-city.webp" alt="3 ore and 2 grain buy a city" width="135" height="106" />
-          <span><b>City <em>2 VPs</em></b><small>Requires: 3 Ore &amp; 2 Grain</small></span>
-        </button>
-        <button class="rulebook-cost" type="button" data-entry="base-development-cards">
-          <img src="images/rulebook/base-cost-devcard.webp" alt="Ore, wool and grain buy a development card" width="137" height="118" />
-          <span><b>Development Card</b><small>Requires: Ore, Wool, &amp; Grain</small></span>
-        </button>
-      </div>
-      <p class="rulebook-costs-note">You cannot build more pieces than what is available in your pool—a maximum of 5 settlements, 4 cities, and 15 roads.</p>
-    </section>
 
     <!-- The books themselves, loaded here and read from, never shown -->
     <div id="rulebook-data" hidden>
