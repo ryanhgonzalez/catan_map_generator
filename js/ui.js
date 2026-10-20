@@ -452,6 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const indexView = document.getElementById("rulebook-index");
   const browse = document.getElementById("rulebook-browse");
   const lists = document.getElementById("rulebook-lists");
+  const jump = document.getElementById("rulebook-jump");
   const results = document.getElementById("rulebook-results");
   const resultsCount = document.getElementById("rulebook-results-count");
   const resultsOther = document.getElementById("rulebook-results-other");
@@ -506,9 +507,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ----- The index -----
 
+  // The Almanac's letter labels in the list, for the jump bar
+  let jumpLabels = [];
+
+  // ----- The jump bar -----
+  // The Almanac's letters down the right edge while browsing, like
+  // Contacts: tap one, or slide along them, and the list jumps to that
+  // letter, just under the header.
+
+  function jumpToLetter(i) {
+    const label = jumpLabels[i];
+    if (!label) return;
+    const header = dialog.querySelector(".settings-header");
+    dialog.scrollTop += label.getBoundingClientRect().top - header.getBoundingClientRect().bottom - 8;
+    Array.from(jump.children).forEach((button, n) => button.classList.toggle("is-active", n === i));
+  }
+
+  // The letter at a height on the bar, the nearest one past either end
+  function letterAt(y) {
+    let at = 0;
+    Array.from(jump.children).forEach((button, i) => {
+      if (button.getBoundingClientRect().top <= y) at = i;
+    });
+    return at;
+  }
+
+  let scrubbing = null;
+  jump.addEventListener("pointerdown", (event) => {
+    if (!jump.children.length) return;
+    // No focus ring or text selection from the press
+    event.preventDefault();
+    try {
+      jump.setPointerCapture(event.pointerId);
+    } catch (err) {
+      // The pointer is already gone; the tap still jumps
+    }
+    scrubbing = { id: event.pointerId, at: letterAt(event.clientY) };
+    jump.classList.add("is-scrubbing");
+    jumpToLetter(scrubbing.at);
+  });
+  jump.addEventListener("pointermove", (event) => {
+    if (!scrubbing || event.pointerId !== scrubbing.id) return;
+    const at = letterAt(event.clientY);
+    if (at === scrubbing.at) return;
+    scrubbing.at = at;
+    jumpToLetter(at);
+  });
+  const endScrub = (event) => {
+    if (!scrubbing || event.pointerId !== scrubbing.id) return;
+    scrubbing = null;
+    jump.classList.remove("is-scrubbing");
+    Array.from(jump.children).forEach((button) => button.classList.remove("is-active"));
+  };
+  jump.addEventListener("pointerup", endScrub);
+  jump.addEventListener("pointercancel", endScrub);
+  // From the keyboard (a pointer press has jumped already)
+  jump.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (button && event.detail === 0) jumpToLetter(Number(button.dataset.index));
+  });
+
   function renderIndex() {
     const data = books[book];
     lists.replaceChildren();
+    jumpLabels = [];
     data.chapters.forEach((chapter) => {
       const section = document.createElement("section");
       section.className = "rulebook-section";
@@ -523,6 +585,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const label = document.createElement("div");
           label.className = "rulebook-group-label";
           label.textContent = item.label;
+          // The Almanac's letters (not C&K's deck names) go on the jump bar
+          if (item.label.length === 1) jumpLabels.push(label);
           group.append(label);
         } else {
           group.append(entryRow(item.entry));
@@ -531,6 +595,14 @@ document.addEventListener("DOMContentLoaded", () => {
       section.append(heading, group);
       lists.append(section);
     });
+    jump.replaceChildren(...jumpLabels.map((label, i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.index = i;
+      button.textContent = label.textContent;
+      button.setAttribute("aria-label", `Almanac, ${label.textContent}`);
+      return button;
+    }));
   }
 
   function entryRow(entry) {
@@ -555,6 +627,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const query = search.value.trim().toLowerCase();
     browse.hidden = query !== "";
     results.hidden = query === "";
+    jump.hidden = query !== "" || jumpLabels.length === 0;
     status.hidden = true;
     if (!query) return;
     // Entries with the words in their title first, then the rest in book order
