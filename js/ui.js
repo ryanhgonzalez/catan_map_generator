@@ -348,9 +348,10 @@ function slidePanel(panel, opening) {
 // The official rulebooks word for word, opened from Rules in the header
 // menu, with a switch between the base game and Cities & Knights
 // (remembered). Each book loads from rulebook/<book>.html the first time it
-// shows. A ✷ cross-reference jumps to its entry, and a button at the
-// bottom goes back to where you were. Tapping an illustration shows it
-// full screen.
+// shows, with its entries closed: tapping a title opens or closes it, and
+// searching opens the matches. A ✷ cross-reference opens and jumps to its
+// entry, and a button at the bottom goes back to where you were. Tapping
+// an illustration shows it full screen.
 
 // The book last shown (the key from when Rules had a short version)
 var RULES_GAME_KEY = "rulesGame";
@@ -388,6 +389,42 @@ function highlightMatches(element, query) {
   });
 }
 
+var RULEBOOK_CHEVRON = '<svg class="rules-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>';
+
+/**
+ * Make a loaded entry open and close from its title: everything under the
+ * title goes into a body that starts closed.
+ */
+function prepareRulebookEntry(entry) {
+  const head = entry.querySelector(".rulebook-entry-head");
+  const body = document.createElement("div");
+  body.className = "rulebook-entry-body";
+  body.id = `${entry.id}-body`;
+  while (head.nextSibling) body.append(head.nextSibling);
+  body.hidden = true;
+  entry.append(body);
+  head.setAttribute("role", "button");
+  head.setAttribute("tabindex", "0");
+  head.setAttribute("aria-expanded", "false");
+  head.setAttribute("aria-controls", body.id);
+  head.insertAdjacentHTML("beforeend", RULEBOOK_CHEVRON);
+}
+
+/** Open or close an entry, sliding (slide) or at once. */
+function setRulebookEntryOpen(entry, open, slide) {
+  const body = entry.querySelector(".rulebook-entry-body");
+  entry.classList.toggle("is-open", open);
+  entry.querySelector(".rulebook-entry-head").setAttribute("aria-expanded", String(open));
+  if (slide) {
+    slidePanel(body, open);
+    return;
+  }
+  if (body.slide) body.slide.cancel();
+  body.slide = null;
+  body.style.overflow = "";
+  body.hidden = !open;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const dialog = document.getElementById("rulebook-dialog");
   const subtitle = document.getElementById("rulebook-subtitle");
@@ -416,11 +453,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch(`rulebook/${book}.html`);
       if (!response.ok) throw new Error(response.status);
       el.innerHTML = await response.text();
-      entriesByBook[book] = Array.from(el.querySelectorAll(".rulebook-entry")).map((entry) => ({
-        entry: entry,
-        html: entry.innerHTML,
-        text: entry.textContent.toLowerCase()
-      }));
+      entriesByBook[book] = Array.from(el.querySelectorAll(".rulebook-entry")).map((entry) => {
+        prepareRulebookEntry(entry);
+        return {
+          entry: entry,
+          html: entry.innerHTML,
+          text: entry.textContent.toLowerCase(),
+          // Opened by the reader; searching opens matches without changing it
+          open: false
+        };
+      });
       status.hidden = true;
     } catch (err) {
       status.textContent = "The rulebook couldn’t load. Check your connection and try again.";
@@ -453,6 +495,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const match = !query || item.text.includes(query);
       item.entry.hidden = !match;
       item.entry.innerHTML = item.html;
+      // Matches open; cleared, entries go back to how the reader left them
+      setRulebookEntryOpen(item.entry, query ? match : item.open, false);
       if (match && query) {
         found += 1;
         highlightMatches(item.entry, query);
@@ -491,6 +535,16 @@ document.addEventListener("DOMContentLoaded", () => {
     target.classList.add("is-flashing");
   }
 
+  const itemFor = (entry) => (entriesByBook[current] || []).find((item) => item.entry === entry);
+
+  // Open or close an entry from its title, and remember it for after a search
+  function toggleEntry(entry) {
+    const item = itemFor(entry);
+    const open = !entry.classList.contains("is-open");
+    if (item) item.open = open;
+    setRulebookEntryOpen(entry, open, true);
+  }
+
   dialog.addEventListener("click", (event) => {
     const zoom = event.target.closest(".rulebook-zoom");
     if (zoom) {
@@ -501,9 +555,21 @@ document.addEventListener("DOMContentLoaded", () => {
       viewer.showModal();
       return;
     }
+    const head = event.target.closest(".rulebook-entry-head");
+    if (head) {
+      toggleEntry(head.closest(".rulebook-entry"));
+      return;
+    }
     const link = event.target.closest('.rulebook-book a[href^="#"]');
     if (!link) return;
     event.preventDefault();
+    // Back comes to the link's entry where it sits on screen now, wherever
+    // entries opening above it have moved it to; it stays open
+    const from = link.closest(".rulebook-entry");
+    returnTo = from
+      ? { entry: from, offset: from.getBoundingClientRect().top }
+      : { top: dialog.scrollTop };
+    if (from && itemFor(from)) itemFor(from).open = true;
     // A link found while searching leads into the whole book again
     if (search.value) {
       search.value = "";
@@ -511,17 +577,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const target = document.getElementById(link.getAttribute("href").slice(1));
     if (!target) return;
-    const from = link.closest(".rulebook-entry");
-    returnTo = { top: dialog.scrollTop };
+    // Opened at once, so the scroll can reach it even near the end
+    const targetEntry = target.closest(".rulebook-entry");
+    if (targetEntry && !targetEntry.classList.contains("is-open")) {
+      if (itemFor(targetEntry)) itemFor(targetEntry).open = true;
+      setRulebookEntryOpen(targetEntry, true, false);
+    }
     returnButton.textContent = from ? `← Back to ${from.dataset.title}` : "← Back to contents";
     returnButton.classList.add("is-shown");
     returnButton.tabIndex = 0;
     jumpTo(target);
   });
 
+  // Titles open and close from the keyboard too
+  dialog.addEventListener("keydown", (event) => {
+    const head = event.target.closest && event.target.closest(".rulebook-entry-head");
+    if (!head || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    toggleEntry(head.closest(".rulebook-entry"));
+  });
+
   returnButton.addEventListener("click", () => {
     if (returnTo) {
-      dialog.scrollTo({ top: returnTo.top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
+      const top = returnTo.entry
+        ? dialog.scrollTop + returnTo.entry.getBoundingClientRect().top - returnTo.offset
+        : returnTo.top;
+      dialog.scrollTo({ top: top, behavior: prefersReducedMotion.matches ? "auto" : "smooth" });
     }
     hideReturn();
     returnButton.tabIndex = -1;

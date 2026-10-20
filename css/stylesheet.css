@@ -1417,7 +1417,7 @@ body {
 
 /* --- Rulebook --- */
 /* The rulebooks word for word (rulebook/*.html): chapter shortcuts,
-   collapsible contents, then each entry as a card. Illustrations sit on a
+   collapsible contents, then each entry as a card that opens from its title. Illustrations sit on a
    plate the color of the printed page. */
 
 .rulebook-dialog {
@@ -1557,10 +1557,41 @@ body {
   from { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245, 196, 0, 0.35); }
 }
 
+/* Tapping an entry's title opens or closes it (ui.js). The head reaches
+   over the card's padding, so the whole card is the target while closed. */
 .rulebook-entry-head {
+  margin: -0.9rem;
+  padding: 0.9rem;
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rulebook-entry-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.rulebook-entry-head .rules-chevron {
+  align-self: center;
+}
+
+/* Turns as soon as an entry starts opening or closing */
+.rulebook-entry.is-open .rules-chevron {
+  transform: rotate(90deg);
+}
+
+/* No padding, so its height can slide all the way to 0; floated
+   illustrations stay inside it */
+.rulebook-entry-body {
+  display: flow-root;
+}
+
+.rulebook-entry-body[hidden] {
+  display: none;
 }
 
 .rulebook-entry h4 {
