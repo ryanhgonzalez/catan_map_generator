@@ -16,6 +16,7 @@ Markup, one block per line or paragraph:
   [[Entry]] or [[label|Entry]] links to an entry (the book's ✷ marker)
   **bold**  *italic*    // comment    aka: Other Name -> Entry
 """
+import hashlib
 import html
 import os
 import re
@@ -42,6 +43,7 @@ PDFS = {
 # ----- Crops -----
 # crops.txt lines: name pdfkey page x0 y0 x1 y1   (pixels at 100 dpi)
 sizes = {}
+versions = {}
 for line in open(os.path.join(src_dir, "crops.txt")):
     # A comment starts a line or follows a space, so bg=#fff48a stays a color
     line = re.split(r"(?:^|\s)#", line)[0].strip()
@@ -77,6 +79,9 @@ for line in open(os.path.join(src_dir, "crops.txt")):
                         *draws, ")", "-alpha", "off", "-compose", "copy-opacity", "-composite",
                         "-background", color, "-compose", "over", "-flatten", "-quality", "80", out], check=True)
     sizes[name] = (x1 - x0, y1 - y0)
+    # A changed illustration gets a new address (?v=), so the app's
+    # offline cache can't keep showing the old one
+    versions[name] = hashlib.sha1(open(out, "rb").read()).hexdigest()[:8]
 
 
 def slug(text):
@@ -219,7 +224,7 @@ def build(book):
             w, h = sizes[name]
             out.append(
                 f'<figure class="rulebook-figure is-{mode}"><button class="rulebook-zoom" type="button" '
-                f'aria-label="Enlarge: {html.escape(alt)}"><img src="images/rulebook/{name}.webp" '
+                f'aria-label="Enlarge: {html.escape(alt)}"><img src="images/rulebook/{name}.webp?v={versions[name]}" '
                 f'alt="{html.escape(alt)}" width="{w // 2}" height="{h // 2}" loading="lazy" /></button></figure>')
             continue
         if line == "---":
@@ -286,7 +291,7 @@ for book in sys.argv[1:] or ["base", "ck"]:
 
 # The service worker precaches these so the rulebook works offline
 files = sorted(f"rulebook/{f}" for f in os.listdir(os.path.join(repo, "rulebook")) if f.endswith(".html"))
-files += sorted(f"images/rulebook/{f}" for f in os.listdir(img_out) if f.endswith(".webp"))
+files += sorted(f"images/rulebook/{name}.webp?v={v}" for name, v in versions.items())
 with open(os.path.join(repo, "rulebook", "precache.js"), "w") as f:
     f.write("// Generated with the rulebook: every file it needs, for sw.js to precache.\n")
     f.write("self.RULEBOOK_FILES = [\n" + ",\n".join(f'  "{x}"' for x in files) + "\n];\n")

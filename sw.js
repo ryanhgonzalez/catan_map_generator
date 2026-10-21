@@ -6,7 +6,7 @@
 
 // Bump to drop caches from older versions. v1 could keep serving a stale
 // page forever (navigations were stored under a different key than "./").
-const CACHE_NAME = "catan-board-generator-v2";
+const CACHE_NAME = "catan-board-generator-v3";
 
 // The page is cached under this one key, whatever URL it was opened with
 // (folder, index.html, or a ?board= share link)

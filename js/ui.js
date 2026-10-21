@@ -368,6 +368,14 @@ var RULEBOOK_NAMES = {
   ck: "Cities & Knights"
 };
 
+// The index's order: the Almanac first, as it's what gets looked up
+// mid-game, then the rules, the overview and 5–6 players
+var RULEBOOK_CHAPTER_ORDER = ["almanac", "game-rules", "game-overview", "5-6-player-extension"];
+
+// Entries about the book rather than the game, left out of the index
+// (still found by search)
+var RULEBOOK_UNLISTED = ["letter", "rules-about", "general-note", "almanac-about"];
+
 var RULEBOOK_CHEVRON = '<svg class="rules-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>';
 
 /** Set an element's text, wrapping each match of query (lowercase) in <mark>. */
@@ -509,7 +517,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderIndex() {
     const data = books[book];
     lists.replaceChildren();
-    data.chapters.forEach((chapter) => {
+    const rank = (chapter) => RULEBOOK_CHAPTER_ORDER.indexOf(chapter.id.replace(`${book}-ch-`, ""));
+    data.chapters.slice().sort((a, b) => rank(a) - rank(b)).forEach((chapter) => {
       const section = document.createElement("section");
       section.className = "rulebook-section";
       section.id = `${chapter.id}-list`;
@@ -522,6 +531,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // The Almanac's letters are left out: it's alphabetical already.
         // C&K's card-deck names stay, as they group the cards.
         if (item.label && item.label.length === 1) return;
+        if (item.entry && RULEBOOK_UNLISTED.includes(item.entry.id.replace(`${book}-`, ""))) return;
         if (item.label) {
           const label = document.createElement("div");
           label.className = "rulebook-group-label";

@@ -2119,6 +2119,27 @@ body {
     margin-left: 0;
   }
 
+  /* Illustrations beside the text would squeeze it to a few words a line:
+     each gets its own line, centered, no taller than a glance */
+  .rulebook-figure.is-side {
+    float: none;
+    width: auto;
+    max-width: none;
+    margin: 0.8rem 0 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .rulebook-figure.is-side .rulebook-zoom {
+    width: auto;
+  }
+
+  .rulebook-figure.is-side .rulebook-zoom img {
+    width: auto;
+    max-width: min(100%, 260px);
+    max-height: 200px;
+  }
+
   .settings-dialog .icon-close {
     display: none;
   }
